@@ -5,7 +5,7 @@ import (
 	logger "github.com/alecthomas/log4go"
 	"fmt"
 	"strings"
-	"kdbutils/tbls"
+	"kdbutils/kdbutils/tbls"
 )
 
 type Kdb struct {
@@ -19,7 +19,7 @@ type kdb_PubData struct {
 
 }
 
-func MewKdb(host string, port string) *Kdb {
+func MewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{host, port, nil}
 	return kdb
 }
@@ -30,7 +30,7 @@ func (this *Kdb) Connect() error {
 	if this.con, err = kdbgo.DialKDB(this.host, this.post, "go"); err == nil {
 		logger.Info("Connected to kdbutls successful")
 	} else {
-		logger.ERROR("Failed to connect to kdbutls, error: %s", err.Error())
+		logger.Error("Failed to connect to kdbutls, error: %s", err.Error())
 		return err
 	}
 	return nil
@@ -40,11 +40,11 @@ func (this *Kdb) Subscribe(table string, sym []string)  {
 	if this.con == nil {
 		this.Connect()
 	}
-	logger.INFO("Subscribing Kdb, table: %s, sym: %v", table, sym)
+	logger.Info("Subscribing Kdb, table: %s, sym: %v", table, sym)
 	symbol := Symbol_array2string(sym)
 	err := this.con.AsyncCall(".u.sub", &kdbgo.K{-kdbgo.KS, kdbgo.NONE, table}, &kdbgo.K{-kdbgo.KS, kdbgo.NONE, symbol})
 	if err != nil {
-		logger.ERROR("Failed to subscibe, table: %s, sym; %s", table, sym)
+		logger.Error("Failed to subscibe, table: %s, sym; %s", table, sym)
 	}
 }
 
@@ -58,7 +58,7 @@ func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
 		}
 		len := res.Len()
 		if len != 3 {
-			logger.ERROR("Message is not pub data, length: %i", len)
+			logger.Error("Message is not pub data, length: %i", len)
 			continue
 		}
 
@@ -66,19 +66,21 @@ func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
 
 		// TODO 如何是从函数参数中取得表名并且转换成相应的数据类型
 		table_name :=data_list[1]
-		var data interface{}
-		switch table_name {
-		case "Market":
-			data = &tbls.Market{}
-		case "Order":
-			data = &tbls.Order{}
-		case "Transaction":
-			data = &tbls.Transaction{}
-		case "OrderQueue":
-			data = &tbls.OrderQueue{}
-		default:
-			continue
-		}
+		//var data interface{}
+		//switch table_name {
+		//case "Market":
+		//	data = &tbls.Market{}
+		//case "Order":
+		//	data = &tbls.Order{}
+		//case "Transaction":
+		//	data = &tbls.Transaction{}
+		//case "OrderQueue":
+		//	data = &tbls.OrderQueue{}
+		//default:
+		//	continue
+		//}
+		fmt.Println("table_name: %v", table_name)
+		data := &tbls.Market{}
 		table := data_list[2].Data.(kdbgo.Table)
 
 		for i := 0; i < int(table.Data[0].Len()); i++ {
@@ -95,5 +97,5 @@ func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
 }
 
 func Symbol_array2string(sym []string) string {
-	return "`" + strings.Join(sym, '`')
+	return "`" + strings.Join(sym, "`")
 }
