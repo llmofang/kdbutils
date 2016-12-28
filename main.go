@@ -1,17 +1,23 @@
 package main
 
-import "kdbutils/kdbutils"
+import (
+	"kdbutils/kdbutils"
+	l4g "github.com/alecthomas/log4go"
+)
 
 func main() {
-	host := "139.196.77.165 "
-	port := 5034
+	l4g.LoadConfiguration("etc/log.xml")
+	var host string
+	var port int
+	host = "139.196.77.165"
+	port = 5034
 	kdb := kdbutils.MewKdb(host, port)
 	kdb.Connect()
-	sym :=[]string {"000001", "601818"}
+	sym := []string{}
 	table := "ohlcv"
 	kdb.Subscribe(table, sym)
-	var ch chan <- interface{}
-	go kdb.GetSubscribedData(ch)
+	var ch chan<- interface{}
+	kdb.GetSubscribedData(ch)
 	//var data interface{}
 	//data <- ch
 }

@@ -25,12 +25,12 @@ func MewKdb(host string, port int) *Kdb {
 }
 
 func (this *Kdb) Connect() error {
-	logger.Info("connecting to kdbutls, host: %s, port:%i", this.host, this.post)
+	logger.Info("connecting to kdb, host: %v, port:%v", this.host, this.post)
 	var err error
-	if this.con, err = kdbgo.DialKDB(this.host, this.post, "go"); err == nil {
-		logger.Info("Connected to kdbutls successful")
+	if this.con, err = kdbgo.DialKDB(this.host, this.post, "kdbgo:kdbgo"); err == nil {
+		logger.Info("Connected to kdb successful")
 	} else {
-		logger.Error("Failed to connect to kdbutls, error: %s", err.Error())
+		logger.Error("Failed to connect to kdb, error: %s", err.Error())
 		return err
 	}
 	return nil
@@ -80,7 +80,7 @@ func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
 		//	continue
 		//}
 		fmt.Println("table_name: %v", table_name)
-		data := &tbls.Market{}
+		data := &tbls.ohlcv{}
 		table := data_list[2].Data.(kdbgo.Table)
 
 		for i := 0; i < int(table.Data[0].Len()); i++ {
@@ -97,5 +97,5 @@ func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
 }
 
 func Symbol_array2string(sym []string) string {
-	return "`" + strings.Join(sym, "`")
+	return strings.Join(sym, "`")
 }
