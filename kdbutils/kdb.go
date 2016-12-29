@@ -5,18 +5,12 @@ import (
 	logger "github.com/alecthomas/log4go"
 	"fmt"
 	"strings"
-	"kdbutils/kdbutils/tbls"
 )
 
 type Kdb struct {
 	host string
 	post int
 	con *kdbgo.KDBConn
-}
-
-type kdb_PubData struct {
-	table_name string
-
 }
 
 func MewKdb(host string, port int) *Kdb {
@@ -41,14 +35,14 @@ func (this *Kdb) Subscribe(table string, sym []string)  {
 		this.Connect()
 	}
 	logger.Info("Subscribing Kdb, table: %s, sym: %v", table, sym)
-	symbol := Symbol_array2string(sym)
+	symbol := strings.Join(sym, "`")
 	err := this.con.AsyncCall(".u.sub", &kdbgo.K{-kdbgo.KS, kdbgo.NONE, table}, &kdbgo.K{-kdbgo.KS, kdbgo.NONE, symbol})
 	if err != nil {
 		logger.Error("Failed to subscibe, table: %s, sym; %s", table, sym)
 	}
 }
 
-func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
+func (this *Kdb) SubscribedData2Channel(channel chan<-interface{}, table2type map[string] interface{})  {
 	for {
 		// ignore type print output
 		res, _, err := this.con.ReadMessage()
@@ -64,38 +58,38 @@ func (this *Kdb) GetSubscribedData(channel chan<-interface{})  {
 
 		data_list := res.Data.([]*kdbgo.K)
 
-		// TODO 如何是从函数参数中取得表名并且转换成相应的数据类型
-		table_name :=data_list[1]
-		//var data interface{}
-		//switch table_name {
-		//case "Market":
-		//	data = &tbls.Market{}
-		//case "Order":
-		//	data = &tbls.Order{}
-		//case "Transaction":
-		//	data = &tbls.Transaction{}
-		//case "OrderQueue":
-		//	data = &tbls.OrderQueue{}
-		//default:
-		//	continue
-		//}
-		fmt.Println("table_name: %v", table_name)
-		data := &tbls.ohlcv{}
-		table := data_list[2].Data.(kdbgo.Table)
+		// confirm function is upd
+		func_name := data_list[0].Data.(string)
+		if func_name != "upd" {
+			logger.Error("function name is not upd, func_name: %s", func_name)
+			continue
+		}
 
-		for i := 0; i < int(table.Data[0].Len()); i++ {
-			err := kdbgo.UnmarshalDict(table.Index(i), data)
+		table_name := data_list[1].Data.(string)
+		logger.Debug("message's table_name: %s", table_name)
+		var data interface{}
+		match := false
+		for tab, tp := range table2type {
+			if table_name == tab {
+  				data = tp
+				match = true
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+
+		table_data := data_list[2].Data.(kdbgo.Table)
+		length := table_data.Data[0].Len()
+		logger.Debug("message's length: %d", length)
+		for i := 0; i < length; i++ {
+			err := kdbgo.UnmarshalDict(table_data.Index(i), data)
 			if err != nil {
 				fmt.Println("Failed to unmrshall dict ", err)
 				continue
 			}
-			//fmt.Println(kline_data)
 			channel <- data
 		}
 	}
-
-}
-
-func Symbol_array2string(sym []string) string {
-	return strings.Join(sym, "`")
 }

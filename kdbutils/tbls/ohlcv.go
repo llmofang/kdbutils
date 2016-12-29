@@ -4,7 +4,7 @@ import (
 	"github.com/sv/kdbgo"
 )
 
-type ohlcv struct {
+type Ohlcv struct {
 	Sym    string
 	Minute kdb.Minute
 	Open   int32
