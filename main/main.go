@@ -1,11 +1,12 @@
 package main
 
 import (
-	"kdbutils/kdbutils"
+	"kdbutils"
 	l4g "github.com/alecthomas/log4go"
 	"time"
-	"kdbutils/kdbutils/tbls"
-	"reflect"
+	"kdbutils/tbls"
+//	"reflect"
+//	"go/types"
 )
 
 func main() {
@@ -16,7 +17,8 @@ func main() {
 	port = 5034
 	kdb := kdbutils.MewKdb(host, port)
 	kdb.Connect()
-	sym := []string{"000001"}
+	//  sym := []string{} // default is all
+	sym := []string{"000001", "601818"}
 	kdb.Subscribe("ohlcv", sym)
 	kdb.Subscribe("Transaction", sym)
 
@@ -32,16 +34,24 @@ func main() {
 	go kdb.SubscribedData2Channel(ch, table2type)
 	var data interface{}
 
+
 	go func() {
 		for {
 			data = <-ch
-
-			t := reflect.TypeOf(data)
-			if t.Kind() == reflect.Ptr {
-				t = t.Elem()
+			switch data.(type) {
+			case *tbls.Ohlcv:
+				ohlcv := data.(*tbls.Ohlcv)
+				l4g.Debug("sym: %v, time: %v, open: %v, high: %v, low: %v, close: %v",
+					ohlcv.Sym, ohlcv.Minute, ohlcv.Open, ohlcv.High, ohlcv.Low, ohlcv.Close)
+			case *tbls.Market:
+				market := data.(*tbls.Market)
+				l4g.Debug("askprice1: %v, askvol1: %v, bidprice1: %v, bidvol1: %v",
+					market.NAskPrice1, market.NAskVol1, market.NBidPrice1, market.NBidVol1)
+			case *tbls.Order:
+				order := data.(*tbls.Order)
+				l4g.Debug("askprice1: %v, askvol1: %v, bidprice1: %v, bidvol1: %v",
+					order.Sym, order.)
 			}
-			name := t.Name()
-			l4g.Debug("Received %s data", name)
 		}
 	}()
 

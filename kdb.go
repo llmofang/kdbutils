@@ -4,7 +4,7 @@ import (
 	kdbgo "github.com/sv/kdbgo"
 	logger "github.com/alecthomas/log4go"
 	"fmt"
-	"strings"
+	//"strings"
 )
 
 type Kdb struct {
@@ -30,13 +30,31 @@ func (this *Kdb) Connect() error {
 	return nil
 }
 
+func (this *Kdb) Disconnect() error {
+	logger.Info("disconnecting to kdb, host: %v, port:%v", this.host, this.post)
+	err := this.con.Close()
+	if err == nil {
+		logger.Info("disconnected to kdb successful")
+	} else {
+		logger.Error("disconnected to kdb error, err: %s", err.Error())
+	}
+	return err
+}
+
 func (this *Kdb) Subscribe(table string, sym []string)  {
 	if this.con == nil {
 		this.Connect()
 	}
-	logger.Info("Subscribing Kdb, table: %s, sym: %v", table, sym)
-	symbol := strings.Join(sym, "`")
-	err := this.con.AsyncCall(".u.sub", &kdbgo.K{-kdbgo.KS, kdbgo.NONE, table}, &kdbgo.K{-kdbgo.KS, kdbgo.NONE, symbol})
+	sym_num := len(sym)
+	logger.Info("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
+	var err error
+	if sym_num == 0 {
+		err = this.con.AsyncCall(".u.sub", &kdbgo.K{-kdbgo.KS, kdbgo.NONE, table},
+			&kdbgo.K{-kdbgo.KS, kdbgo.NONE, ""})
+	} else {
+		err = this.con.AsyncCall(".u.sub", &kdbgo.K{-kdbgo.KS, kdbgo.NONE, table},
+			&kdbgo.K{kdbgo.KS, kdbgo.NONE, sym})
+	}
 	if err != nil {
 		logger.Error("Failed to subscibe, table: %s, sym; %s", table, sym)
 	}
