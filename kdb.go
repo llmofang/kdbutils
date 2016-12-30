@@ -4,8 +4,12 @@ import (
 	kdbgo "github.com/sv/kdbgo"
 	logger "github.com/alecthomas/log4go"
 	"fmt"
-	//"strings"
+	"errors"
 )
+
+// ref: http://stackoverflow.com/questions/10210188/instance-new-type-golang
+
+type Factory_New func() interface{}
 
 type Kdb struct {
 	host string
@@ -60,7 +64,7 @@ func (this *Kdb) Subscribe(table string, sym []string)  {
 	}
 }
 
-func (this *Kdb) SubscribedData2Channel(channel chan<-interface{}, table2type map[string] interface{})  {
+func (this *Kdb) SubscribedData2Channel(channel chan<-interface{}, table2struct map[string]Factory_New)  {
 	for {
 		// ignore type print output
 		res, _, err := this.con.ReadMessage()
@@ -85,11 +89,12 @@ func (this *Kdb) SubscribedData2Channel(channel chan<-interface{}, table2type ma
 
 		table_name := data_list[1].Data.(string)
 		logger.Debug("message's table_name: %s", table_name)
-		var data interface{}
+
+		var factory Factory_New
 		match := false
-		for tab, tp := range table2type {
+		for tab, fn := range table2struct {
 			if table_name == tab {
-  				data = tp
+  				factory = fn
 				match = true
 				break
 			}
@@ -102,12 +107,39 @@ func (this *Kdb) SubscribedData2Channel(channel chan<-interface{}, table2type ma
 		length := table_data.Data[0].Len()
 		logger.Debug("message's length: %d", length)
 		for i := 0; i < length; i++ {
-			err := kdbgo.UnmarshalDict(table_data.Index(i), data)
+			row := factory()
+			err := kdbgo.UnmarshalDict(table_data.Index(i), row)
 			if err != nil {
 				fmt.Println("Failed to unmrshall dict ", err)
 				continue
 			}
-			channel <- data
+			channel <- row
 		}
+	}
+}
+
+func (this *Kdb) QueryTable(query string, factory Factory_New) ([]interface{},error) {
+	if this.con == nil {
+		logger.Error("Kdb is not connected")
+		return nil, errors.New("kdb is not connected")
+	}
+
+	if res, err := this.con.Call(query); err != nil {
+		logger.Error("Kdb query error, query: %v, error: %v", query, err)
+		return nil, errors.New("kdb query error")
+	} else {
+		// parse result
+		table := res.Data.(kdbgo.Table)
+		length := table.Data[0].Len()
+		table_data := make([]interface{}, length, length)
+
+		for i := 0; i < length; i++ {
+			row := factory()
+			if err := kdbgo.UnmarshalDict(table.Index(i), row); err != nil {
+				return nil, err
+			}
+			table_data[i] = row
+		}
+		return table_data, nil
 	}
 }

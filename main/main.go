@@ -1,12 +1,10 @@
 package main
 
 import (
-	"kdbutils"
+	"github.com/llmofang/kdbutils"
+	"github.com/llmofang/kdbutils/tbls"
 	l4g "github.com/alecthomas/log4go"
 	"time"
-	"kdbutils/tbls"
-//	"reflect"
-//	"go/types"
 )
 
 func main() {
@@ -16,24 +14,43 @@ func main() {
 	host = "139.196.77.165"
 	port = 5034
 	kdb := kdbutils.MewKdb(host, port)
+
 	kdb.Connect()
+	test_query_table(kdb)
+	test_subscribe(kdb)
+	time.Sleep(10 * time.Second)
+
+
+	//kdb.Disconnect()
+	//kdb.Connect()
+	// test for query table
+
+
+	for {
+		time.Sleep(100 * time.Second)
+	}
+}
+
+func test_subscribe(kdb *kdbutils.Kdb)  {
+
 	//  sym := []string{} // default is all
 	sym := []string{"000001", "601818"}
 	kdb.Subscribe("ohlcv", sym)
 	kdb.Subscribe("Transaction", sym)
 
 	ch := make(chan interface{}, 1000)
-	table2type := make(map[string] interface{})
+	table2struct := make(map[string] kdbutils.Factory_New)
 
-	table2type["Market"] = &tbls.Market{}
-	table2type["Transaction"] = &tbls.Transaction{}
-	table2type["Order"] = &tbls.Order{}
-	table2type["OrderQueue"] = &tbls.OrderQueue{}
-	table2type["ohlcv"] = &tbls.Ohlcv{}
+	table2struct["Market"] = func() interface{}{ return new(tbls.Market) }
 
-	go kdb.SubscribedData2Channel(ch, table2type)
+	table2struct["Transaction"] = func() interface{}{ return new(tbls.Transaction) }
+	table2struct["Order"] = func() interface{}{ return new(tbls.Order) }
+	table2struct["OrderQueue"] = func() interface{}{ return new(tbls.OrderQueue) }
+	table2struct["ohlcv"] = func() interface{}{ return new(tbls.Ohlcv) }
+
+	go kdb.SubscribedData2Channel(ch, table2struct)
+
 	var data interface{}
-
 
 	go func() {
 		for {
@@ -47,15 +64,21 @@ func main() {
 				market := data.(*tbls.Market)
 				l4g.Debug("askprice1: %v, askvol1: %v, bidprice1: %v, bidvol1: %v",
 					market.NAskPrice1, market.NAskVol1, market.NBidPrice1, market.NBidVol1)
-			case *tbls.Order:
-				order := data.(*tbls.Order)
-				l4g.Debug("askprice1: %v, askvol1: %v, bidprice1: %v, bidvol1: %v",
-					order.Sym, order.)
 			}
 		}
 	}()
+}
 
-	for {
-		time.Sleep(1000 * time.Second)
+func test_query_table(kdb *kdbutils.Kdb) {
+
+	query := "0!select [-10] from ohlcv"
+	if table_data, err := kdb.QueryTable(query, func() interface{} {
+		return new(tbls.Ohlcv)
+	}); err == nil {
+		for i := 0; i < len(table_data); i++ {
+			ohlcv := table_data[i].(*tbls.Ohlcv)
+			l4g.Debug("sym: %v, min: %v, open: %v, high: %v, low: %v, close: %v", ohlcv.Sym, ohlcv.Minute, ohlcv.Open, ohlcv.High, ohlcv.Low, ohlcv.Close)
+
+		}
 	}
 }
