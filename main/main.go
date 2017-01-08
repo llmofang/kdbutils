@@ -5,7 +5,6 @@ import (
 	"github.com/llmofang/kdbutils/tbls"
 	l4g "github.com/alecthomas/log4go"
 	"time"
-	"reflect"
 )
 
 func main() {
@@ -26,7 +25,7 @@ func main() {
 	}
 }
 
-func test_subscribe(kdb *kdbutils.Kdb)  {
+func test_subscribe(kdb *kdbutils.Kdb) {
 
 	//  sym := []string{} // default is all
 	sym := []string{"000001", "601818"}
@@ -34,14 +33,24 @@ func test_subscribe(kdb *kdbutils.Kdb)  {
 	kdb.Subscribe("Transaction", sym)
 
 	ch := make(chan interface{}, 1000)
-	table2struct := make(map[string] kdbutils.Factory_New)
+	table2struct := make(map[string]kdbutils.Factory_New)
 
-	table2struct["Market"] = func() interface{}{ return new(tbls.Market) }
+	table2struct["Market"] = func() interface{} {
+		return new(tbls.Market)
+	}
 
-	table2struct["Transaction"] = func() interface{}{ return new(tbls.Transaction) }
-	table2struct["Order"] = func() interface{}{ return new(tbls.Order) }
-	table2struct["OrderQueue"] = func() interface{}{ return new(tbls.OrderQueue) }
-	table2struct["ohlcv"] = func() interface{}{ return new(tbls.Ohlcv) }
+	table2struct["Transaction"] = func() interface{} {
+		return new(tbls.Transaction)
+	}
+	table2struct["Order"] = func() interface{} {
+		return new(tbls.Order)
+	}
+	table2struct["OrderQueue"] = func() interface{} {
+		return new(tbls.OrderQueue)
+	}
+	table2struct["ohlcv"] = func() interface{} {
+		return new(tbls.Ohlcv)
+	}
 
 	go kdb.SubscribedData2Channel(ch, table2struct)
 
@@ -66,11 +75,11 @@ func test_subscribe(kdb *kdbutils.Kdb)  {
 
 func test_query_table(kdb *kdbutils.Kdb) {
 
-	query := "0!select [-10] from ohlcv"
+	query := "0!select [-10] from ohlcv1"
 
 	ohlcv := make([]tbls.Ohlcv, 0)
 	// ohlcv := tbls.Ohlcv{}
-	if result, err :=kdb.QueryNoneKeyedTable(query, &ohlcv); err == nil {
+	if result, err := kdb.QueryNoneKeyedTable(query, &ohlcv); err == nil {
 		res := result.([]tbls.Ohlcv)
 		for i := 0; i < len(res); i++ {
 			ohlcv := res[i]
@@ -78,32 +87,8 @@ func test_query_table(kdb *kdbutils.Kdb) {
 				ohlcv.Sym, ohlcv.Minute, ohlcv.Open, ohlcv.High, ohlcv.Low, ohlcv.Close)
 		}
 
-		func(data interface{}) {
-			data_s := reflect.ValueOf(data)
-
-			if data_s.Len() > 0 {
-				num_field := reflect.ValueOf(data_s.Index(0)).NumField()
-				for i := 0; i < num_field; i++ {
-					l4g.Debug(data_s.Index(0).Type().Field(i).Name)
-					l4g.Debug(data_s.Index(0).Field(i).Kind())
-					for j := 0; j < data_s.Len(); j++ {
-						l4g.Debug(data_s.Index(j).Field(i).Interface())
-					}
-				}
-			}
-			/**
-			for i := 0; i < data_s.Len(); i++ {
-				s := data_s.Index(i)
-				vv := reflect.ValueOf(s)
-				for j := 0; j < vv.NumField(); j++ {
-					l4g.Debug(s.Type().Field(j).Name)
-					l4g.Debug(s.Field(j).Kind())
-					l4g.Debug(s.Field(j).Interface())
-				}
-			}
-			**/
-		}(res)
-		// test for update
+		//kdbutils.Slice2KTable(res)
+		kdb.FuncTable("insert", "ohlcv", res)
 	}
 
 	l4g.Debug("===============================================================================================")
@@ -119,3 +104,4 @@ func test_query_table(kdb *kdbutils.Kdb) {
 	}
 
 }
+
