@@ -15,9 +15,9 @@ import (
 type Factory_New func() interface{}
 
 type Kdb struct {
-	host string
-	post int
-	con  *kdb.KDBConn
+	Host       string
+	Port       int
+	Connection *kdb.KDBConn
 }
 
 func MewKdb(host string, port int) *Kdb {
@@ -26,9 +26,9 @@ func MewKdb(host string, port int) *Kdb {
 }
 
 func (this *Kdb) Connect() error {
-	logger.Info("connecting to kdb, host: %v, port:%v", this.host, this.post)
+	logger.Info("connecting to kdb, host: %v, port:%v", this.Host, this.Port)
 	var err error
-	if this.con, err = kdb.DialKDB(this.host, this.post, "kdbgo:kdbgo"); err == nil {
+	if this.Connection, err = kdb.DialKDB(this.Host, this.Port, "kdbgo:kdbgo"); err == nil {
 		logger.Info("Connected to kdb successful")
 	} else {
 		logger.Error("Failed to connect to kdb, error: %s", err.Error())
@@ -37,9 +37,17 @@ func (this *Kdb) Connect() error {
 	return nil
 }
 
+func (this *Kdb) IsConnected() bool {
+	if this.Connection == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (this *Kdb) Disconnect() error {
-	logger.Info("disconnecting to kdb, host: %v, port:%v", this.host, this.post)
-	err := this.con.Close()
+	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
+	err := this.Connection.Close()
 	if err == nil {
 		logger.Info("disconnected to kdb successful")
 	} else {
@@ -49,17 +57,14 @@ func (this *Kdb) Disconnect() error {
 }
 
 func (this *Kdb) Subscribe(table string, sym []string) {
-	if this.con == nil {
-		this.Connect()
-	}
 	sym_num := len(sym)
 	logger.Info("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
 	var err error
 	if sym_num == 0 {
-		err = this.con.AsyncCall(".u.sub", &kdb.K{-kdb.KS, kdb.NONE, table},
+		err = this.Connection.AsyncCall(".u.sub", &kdb.K{-kdb.KS, kdb.NONE, table},
 			&kdb.K{-kdb.KS, kdb.NONE, ""})
 	} else {
-		err = this.con.AsyncCall(".u.sub", &kdb.K{-kdb.KS, kdb.NONE, table},
+		err = this.Connection.AsyncCall(".u.sub", &kdb.K{-kdb.KS, kdb.NONE, table},
 			&kdb.K{kdb.KS, kdb.NONE, sym})
 	}
 	if err != nil {
@@ -70,7 +75,7 @@ func (this *Kdb) Subscribe(table string, sym []string) {
 func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct map[string]Factory_New) {
 	for {
 		// ignore type print output
-		res, _, err := this.con.ReadMessage()
+		res, _, err := this.Connection.ReadMessage()
 		if err != nil {
 			logger.Error("Error on processing KDB message, error: ", err.Error())
 			return
@@ -122,12 +127,12 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 }
 
 func (this *Kdb) QueryNoneKeyedTable(query string, v interface{}) (interface{}, error) {
-	if this.con == nil {
+	if this.Connection == nil {
 		logger.Error("Kdb is not connected")
 		return nil, errors.New("kdb is not connected")
 	}
 
-	if res, err := this.con.Call(query); err != nil {
+	if res, err := this.Connection.Call(query); err != nil {
 		logger.Error("Kdb query error, query: %v, error: %v", query, err)
 		return nil, errors.New("kdb query error")
 	} else {
@@ -152,12 +157,12 @@ func (this *Kdb) QueryNoneKeyedTable(query string, v interface{}) (interface{}, 
 }
 
 func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]interface{}, error) {
-	if this.con == nil {
+	if this.Connection == nil {
 		logger.Error("Kdb is not connected")
 		return nil, errors.New("kdb is not connected")
 	}
 
-	if res, err := this.con.Call(query); err != nil {
+	if res, err := this.Connection.Call(query); err != nil {
 		logger.Error("Kdb query error, query: %v, error: %v", query, err)
 		return nil, errors.New("kdb query error")
 	} else {
@@ -181,7 +186,7 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 	if table, err := Slice2KTable(data); err == nil {
 		//logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
-		if ret, err := this.con.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab); err == nil {
+		if ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab); err == nil {
 			logger.Info("Execute kdb function successfully, func_name: %v, table_name: %v, return: %v",
 				func_name, table_name, ret)
 			return ret, nil
