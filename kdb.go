@@ -114,6 +114,7 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 		table_data := data_list[2].Data.(kdb.Table)
 		length := table_data.Data[0].Len()
 		logger.Debug("message's length: %d", length)
+		logger.Debug("message's content: %d", table_data)
 		for i := 0; i < length; i++ {
 			row := factory()
 			err := kdb.UnmarshalDict(table_data.Index(i), row)
@@ -121,6 +122,7 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 				fmt.Println("Failed to unmrshall dict ", err)
 				continue
 			}
+			logger.Debug("before send: %v", row)
 			channel <- row
 		}
 	}
@@ -186,14 +188,12 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 	if table, err := Slice2KTable(data); err == nil {
 		//logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
-		if ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab); err == nil {
-			logger.Info("Execute kdb function successfully, func_name: %v, table_name: %v, return: %v",
-				func_name, table_name, ret)
-			return ret, nil
-		} else {
+		if ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab); err != nil {
 			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v, return: %v",
 				func_name, table_name, err, ret)
 			return nil, errors.New("Execute kdb function failed")
+		} else {
+			return nil, nil
 		}
 	} else {
 		return nil, errors.New("Slice2KTable error")
@@ -283,7 +283,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 	var values = []*kdb.K{}
 	if data_value.Len() > 0 {
 		num_field :=data_value.Index(0).Type().NumField()
-		logger.Debug("num_field: %v", num_field)
+		// logger.Debug("num_field: %v", num_field)
 		for i := 0; i < num_field ; i++ {
 			//if i == 1 {
 			//	continue

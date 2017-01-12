@@ -4,7 +4,6 @@ import (
 	"github.com/llmofang/kdbutils"
 	"github.com/llmofang/kdbutils/tbls"
 	l4g "github.com/alecthomas/log4go"
-	"time"
 )
 
 func main() {
@@ -16,12 +15,28 @@ func main() {
 	kdb := kdbutils.MewKdb(host, port)
 
 	kdb.Connect()
-	test_query_table(kdb)
-	test_subscribe(kdb)
-	time.Sleep(10 * time.Second)
+	//test_query_table(kdb)
+	//test_subscribe(kdb)
+	//time.Sleep(10 * time.Second)
+	//
+	//for {
+	//	time.Sleep(100 * time.Second)
+	//}
 
-	for {
-		time.Sleep(100 * time.Second)
+	//test for transaction
+	// tlast
+	kdb_tlast := kdbutils.MewKdb(host, 5034)
+	kdb_tlast.Connect()
+	query := "0!select from Transaction"
+	trans := make([]tbls.Transaction, 0)
+	// ohlcv := tbls.Ohlcv{}
+	if result, err := kdb.QueryNoneKeyedTable(query, &trans); err == nil {
+		res := result.([]tbls.Transaction)
+		for i := 0; i < len(res); i++ {
+			transaction := res[i]
+			l4g.Debug("sym: %v, min: %v, open: %v, high: %v, l",
+				transaction.Sym, transaction.Time, transaction.NPrice)
+		}
 	}
 }
 

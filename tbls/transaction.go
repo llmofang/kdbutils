@@ -3,7 +3,7 @@ package tbls
 import "time"
 
 type Transaction struct {
-	Time   time.Time
+	Time   time.Duration
 	Sym string
 	SzWindCode   string
 	NActionDay   int32

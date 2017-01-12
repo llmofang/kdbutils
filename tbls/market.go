@@ -1,12 +1,12 @@
 package tbls
 
 import (
-	"github.com/sv/kdbgo"
+	"time"
 )
 
 type Market struct {
 	Sym string
-	Time kdb.Time
+	Time time.Duration
 	SzWindCode string
 	NActionDay int32
 	NTime int32
