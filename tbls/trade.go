@@ -6,7 +6,7 @@ import (
 
 /**
 kdb table define:
-Position:3!flip `sym`accountname`stockcode`position`price`profit!"sssiff"$\:()
+Position:3!flip `sym`accountname`stockcode`position`price`marketprice`profit!"sssifff"$\:()
 Profit:3!flip `sym`accountname`stockcode`profit`entrusts`volumes`amount`fee!"sssfiiff"$\:()
  */
 
@@ -26,16 +26,34 @@ type Request struct {
 	Status      int32
 }
 
+type Request64 struct {
+	Sym         string
+	Qid         string
+	Accountname string
+	Time        time.Time
+	Entrustno   int64
+	Stockcode   string
+	Askprice    float64
+	Askvol      int64
+	Bidprice    float64
+	Bidvol      int64
+	Withdraw    int64
+	Status      int64
+}
+
 type Response Request
+type Response64 Request64
 
 type Entrust Request
+type Entrust64 Request64
 
 type Position struct {
 	Sym         string
 	Accountname string
 	Stockcode   string
 	Position    int32
-	Price 	    float64
+	Price       float64
+	Marketprice float64
 	Profit      float64
 }
 

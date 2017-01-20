@@ -111,13 +111,21 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 			continue
 		}
 
-		table_data := data_list[2].Data.(kdb.Table)
+		var table_data kdb.Table
+		switch data_list[2].Data.(type) {
+		case kdb.Table:
+			table_data = data_list[2].Data.(kdb.Table)
+		case kdb.Dict:
+			table_xx := data_list[2].Data.(kdb.Dict)
+			fmt.Println("table_xx: ",table_xx)
+			continue
+		}
 		length := table_data.Data[0].Len()
-		logger.Debug("message's length: %d", length)
-		logger.Debug("message's content: %d", table_data)
+		logger.Debug("message's table_name: %s, length: %d", table_name,length)
 		for i := 0; i < length; i++ {
 			row := factory()
-			err := kdb.UnmarshalDict(table_data.Index(i), row)
+			test := table_data.Index(i)
+			err := kdb.UnmarshalDict(test, row)
 			if err != nil {
 				fmt.Println("Failed to unmrshall dict ", err)
 				continue
