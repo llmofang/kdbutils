@@ -12,9 +12,9 @@ type Transaction struct {
 	NPrice   int32
 	NVolume int32
 	NTurnover int32
-	NBSFlag string
-	ChOrderKind string
-	ChFunctionCode string
+	NBSFlag int32
+	ChOrderKind byte
+	ChFunctionCode byte
 	NAskOrder int32
 	NBidOrder int32
 }
