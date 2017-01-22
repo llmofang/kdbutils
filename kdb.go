@@ -116,8 +116,8 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 		case kdb.Table:
 			table_data = data_list[2].Data.(kdb.Table)
 		case kdb.Dict:
-			table_xx := data_list[2].Data.(kdb.Dict)
-			fmt.Println("table_xx: ",table_xx)
+			dic := data_list[2].Data.(kdb.Dict)
+			logger.Error("received not a table , is a dic, dic: %v",dic)
 			continue
 		}
 		length := table_data.Data[0].Len()
