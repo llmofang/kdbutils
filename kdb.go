@@ -355,6 +355,22 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			case reflect.Struct: {
 				v := data_value.Index(0).Field(i).Interface()
 				switch t:= v.(type) {
+
+				// TODO
+				case time.Time:
+					var col_data = []float64{}
+					for j := 0; j < data_value.Len(); j++ {
+						m := data_value.Index(j).Field(i).MethodByName("Local")
+						rets := m.Call([]reflect.Value{})
+						var t time.Time = rets[0].Interface().(time.Time)
+						m2 := data_value.Index(j).Field(i).MethodByName("Location")
+						rets2 := m2.Call([]reflect.Value{})
+						var l *time.Location = rets2[0].Interface().(*time.Location)
+						var timeFloat64 float64 = getNumDate(t, l)
+						col_data = append(col_data, timeFloat64)
+					}
+					col_data_k := &kdb.K{kdb.KZ, kdb.NONE, col_data}
+					values = append(values, col_data_k)
 				case kdb.Minute:
 					var col_data = []int32{}
 					for j := 0; j < data_value.Len(); j++ {
@@ -409,5 +425,13 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 	table.Columns = keys
 	table.Data = values
 	return table, nil
+}
+
+
+// TODO
+func getNumDate(datetime time.Time, local *time.Location) float64 {
+	var qEpoch = time.Date(2000, time.January, 1, 0, 0, 0, 0, local)
+	diff := ((float64)(datetime.UnixNano()-qEpoch.UnixNano()) / (float64)(864000*100000000))
+	return diff
 }
 
