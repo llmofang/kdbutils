@@ -1,7 +1,7 @@
 package tbls
 
 import (
-	"github.com/sv/kdbgo"
+	"github.com/llmofang/kdbgo"
 )
 
 type Ohlcv struct {

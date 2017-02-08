@@ -1,7 +1,7 @@
 package kdbutils
 
 import (
-	kdb "github.com/sv/kdbgo"
+	kdb "github.com/llmofang/kdbgo"
 	logger "github.com/alecthomas/log4go"
 	"fmt"
 	"errors"
