@@ -299,7 +299,8 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			//}
 			col_name := data_value.Index(0).Type().Field(i).Name
 			// logger.Debug(col_name)
-			keys = append(keys, strings.ToLower(col_name))
+			// keys = append(keys, strings.ToLower(col_name))
+			keys = append(keys, strings.ToLower(col_name[0:1])+col_name[1:])
 			kind := data_value.Index(0).Field(i).Kind()
 			// logger.Debug(kind)
 
