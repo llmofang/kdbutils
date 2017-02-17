@@ -1,13 +1,14 @@
 package kdbutils
 
 import (
-	kdb "github.com/llmofang/kdbgo"
+
 	logger "github.com/alecthomas/log4go"
 	"fmt"
 	"errors"
 	"reflect"
 	"strings"
 	"time"
+	"github.com/llmofang/kdbgo"
 )
 
 // ref: http://stackoverflow.com/questions/10210188/instance-new-type-golang
