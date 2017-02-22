@@ -21,7 +21,7 @@ type Kdb struct {
 	Connection *kdb.KDBConn
 }
 
-func MewKdb(host string, port int) *Kdb {
+func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{host, port, nil}
 	return kdb
 }

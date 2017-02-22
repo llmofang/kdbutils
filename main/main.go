@@ -12,7 +12,7 @@ func main() {
 	var port int
 	host = "139.196.77.165"
 	port = 5034
-	kdb := kdbutils.MewKdb(host, port)
+	kdb := kdbutils.NewKdb(host, port)
 
 	kdb.Connect()
 	//test_query_table(kdb)
@@ -25,7 +25,7 @@ func main() {
 
 	//test for transaction
 	// tlast
-	kdb_tlast := kdbutils.MewKdb(host, 5034)
+	kdb_tlast := kdbutils.NewKdb(host, 5034)
 	kdb_tlast.Connect()
 	query := "0!select from Transaction"
 	trans := make([]tbls.Transaction, 0)
