@@ -26,19 +26,19 @@ func main() {
 
 	//test for transaction
 	// tlast
-	//kdb_tlast := kdbutils.NewKdb(host, 5034)
-	//kdb_tlast.Connect()
-	//query := "0!select from Transaction"
-	//trans := make([]tbls.Transaction, 0)
-	//// ohlcv := tbls.Ohlcv{}
-	//if result, err := kdb.QueryNoneKeyedTable(query, &trans); err == nil {
-	//	res := result.([]tbls.Transaction)
-	//	for i := 0; i < len(res); i++ {
-	//		transaction := res[i]
-	//		l4g.Debug("sym: %v, min: %v, open: %v, high: %v, l",
-	//			transaction.Sym, transaction.Time, transaction.NPrice)
-	//	}
-	//}
+	kdb_tlast := kdbutils.NewKdb(host, 5034)
+	kdb_tlast.Connect()
+	query := "0!select from Transaction"
+	trans := make([]tbls.Transaction, 0)
+	// ohlcv := tbls.Ohlcv{}
+	if result, err := kdb.QueryNoneKeyedTable(query, &trans); err == nil {
+		res := result.([]tbls.Transaction)
+		for i := 0; i < len(res); i++ {
+			transaction := res[i]
+			l4g.Debug("sym: %v, min: %v, open: %v, high: %v, l",
+				transaction.Sym, transaction.Time, transaction.NPrice)
+		}
+	}
 }
 
 func test_subscribe(kdb *kdbutils.Kdb) {

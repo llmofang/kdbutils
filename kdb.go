@@ -1,7 +1,7 @@
 package kdbutils
 
 import (
-	kdb "github.com/llmofang/kdbgo"
+
 	logger "github.com/alecthomas/log4go"
 	"fmt"
 	"errors"
@@ -10,6 +10,7 @@ import (
 	"time"
 	"sync"
 	"github.com/llmofang/kdbutils/comm"
+	"github.com/llmofang/kdbgo"
 )
 
 // ref: http://stackoverflow.com/questions/10210188/instance-new-type-golang
@@ -29,6 +30,8 @@ func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
 		sub_tables:make([]string, 0)}
+
+
 	return kdb
 }
 

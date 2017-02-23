@@ -1,7 +1,6 @@
 package tbls
 
 import "github.com/llmofang/kdbgo"
-
 type Order struct {
 	Sym string
 	Time kdb.Time
