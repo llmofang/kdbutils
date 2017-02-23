@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"sync"
+	"github.com/llmofang/kdbutils/comm"
 )
 
 // ref: http://stackoverflow.com/questions/10210188/instance-new-type-golang
@@ -18,10 +20,15 @@ type Kdb struct {
 	Host       string
 	Port       int
 	Connection *kdb.KDBConn
+	subscriber comm.Subscriber
+	sub_tables []string
+	sync.RWMutex
 }
 
-func MewKdb(host string, port int) *Kdb {
-	kdb := &Kdb{host, port, nil}
+func NewKdb(host string, port int) *Kdb {
+	kdb := &Kdb{Host:host, Port: port, Connection:nil,
+		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
+		sub_tables:make([]string, 0)}
 	return kdb
 }
 
@@ -60,6 +67,8 @@ func (this *Kdb) Subscribe(table string, sym []string) {
 	sym_num := len(sym)
 	logger.Info("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
 	var err error
+
+	this.Lock()
 	if sym_num == 0 {
 		err = this.Connection.AsyncCall(".u.sub", &kdb.K{-kdb.KS, kdb.NONE, table},
 			&kdb.K{-kdb.KS, kdb.NONE, ""})
@@ -67,8 +76,84 @@ func (this *Kdb) Subscribe(table string, sym []string) {
 		err = this.Connection.AsyncCall(".u.sub", &kdb.K{-kdb.KS, kdb.NONE, table},
 			&kdb.K{kdb.KS, kdb.NONE, sym})
 	}
+	this.Unlock()
+
 	if err != nil {
 		logger.Error("Failed to subscibe, table: %s, sym; %s", table, sym)
+	}
+}
+
+func (this *Kdb) SubSym(sym []string) {
+
+	logger.Info("SubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
+
+	if len(this.sub_tables) == 0 || len(sym) == 0 {
+		logger.Info("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
+		return
+	}
+
+	var sub_syms []string
+
+	for _, symbol := range sym {
+		if rtn := this.subscriber.Subscribe(symbol); rtn != nil {
+			sub_syms = rtn
+		}
+	}
+
+	if sub_syms != nil {
+		for _, table := range this.sub_tables {
+			this.Subscribe(table, sub_syms)
+		}
+	}
+}
+
+func (this *Kdb) UnSubSym(sym []string) {
+
+	logger.Info("UnSubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
+
+	if len(this.sub_tables) == 0 || len(sym) == 0 {
+		logger.Info("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
+		return
+	}
+
+	var sub_syms []string
+
+	for _, symbol := range sym {
+		if rtn := this.subscriber.Unsubscribe(symbol); rtn != nil {
+			// logger.Debug("rtn: %v", rtn)
+			sub_syms = rtn
+		} else {
+			// logger.Debug("to_slice", this.subscriber.ToSlice())
+		}
+	}
+
+	if sub_syms != nil {
+		for _, table := range this.sub_tables {
+			this.Subscribe(table, sub_syms)
+		}
+	}
+}
+
+
+
+func (this *Kdb) SubTable(table string) {
+
+	found := false
+	for _, old_tab := range this.sub_tables {
+		if old_tab == table {
+			logger.Debug("Table already in sub_tables, table: %v", table)
+			break
+		}
+	}
+	if !found {
+		this.sub_tables = append(this.sub_tables, table)
+		sym := this.subscriber.ToSlice()
+
+		if len(sym)> 0{
+			this.Subscribe(table, sym)
+		} else {
+			logger.Debug("Sym is empty!")
+		}
 	}
 }
 
@@ -117,11 +202,11 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 			table_data = data_list[2].Data.(kdb.Table)
 		case kdb.Dict:
 			dic := data_list[2].Data.(kdb.Dict)
-			logger.Error("received not a table , is a dic, dic: %v",dic)
+			logger.Error("received not a table , is a dic, dic: %v", dic)
 			continue
 		}
 		length := table_data.Data[0].Len()
-		logger.Debug("message's table_name: %s, length: %d", table_name,length)
+		logger.Debug("message's table_name: %s, length: %d", table_name, length)
 		for i := 0; i < length; i++ {
 			row := factory()
 			test := table_data.Index(i)
@@ -142,7 +227,11 @@ func (this *Kdb) QueryNoneKeyedTable(query string, v interface{}) (interface{}, 
 		return nil, errors.New("kdb is not connected")
 	}
 
-	if res, err := this.Connection.Call(query); err != nil {
+	this.Lock()
+	res, err := this.Connection.Call(query);
+	this.Unlock()
+
+	if err != nil {
 		logger.Error("Kdb query error, query: %v, error: %v", query, err)
 		return nil, errors.New("kdb query error")
 	} else {
@@ -172,7 +261,11 @@ func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]inter
 		return nil, errors.New("kdb is not connected")
 	}
 
-	if res, err := this.Connection.Call(query); err != nil {
+	this.Lock()
+	res, err := this.Connection.Call(query);
+	this.Unlock()
+
+	if err != nil {
 		logger.Error("Kdb query error, query: %v, error: %v", query, err)
 		return nil, errors.New("kdb query error")
 	} else {
@@ -196,7 +289,12 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 	if table, err := Slice2KTable(data); err == nil {
 		//logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
-		if ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab); err != nil {
+
+		this.Lock()
+		ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
+		this.Unlock()
+
+		if err != nil {
 			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v, return: %v",
 				func_name, table_name, err, ret)
 			return nil, errors.New("Execute kdb function failed")
@@ -290,16 +388,16 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 	var keys = []string{}
 	var values = []*kdb.K{}
 	if data_value.Len() > 0 {
-		num_field :=data_value.Index(0).Type().NumField()
+		num_field := data_value.Index(0).Type().NumField()
 		// logger.Debug("num_field: %v", num_field)
-		for i := 0; i < num_field ; i++ {
+		for i := 0; i < num_field; i++ {
 			//if i == 1 {
 			//	continue
 			//}
 			col_name := data_value.Index(0).Type().Field(i).Name
 			// logger.Debug(col_name)
 			// keys = append(keys, strings.ToLower(col_name))
-			keys = append(keys, strings.ToLower(col_name[0:1])+col_name[1:])
+			keys = append(keys, strings.ToLower(col_name[0:1]) + col_name[1:])
 			kind := data_value.Index(0).Field(i).Kind()
 			// logger.Debug(kind)
 
@@ -355,7 +453,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			}
 			case reflect.Struct: {
 				v := data_value.Index(0).Field(i).Interface()
-				switch t:= v.(type) {
+				switch t := v.(type) {
 
 				// TODO
 				case time.Time:
@@ -406,7 +504,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 						tt := time.Time(v_kdb)
 						dur := tt.Sub(qEpoch)
 						//logger.Debug("Duration: %v, Millisecond: %v", dur, dur.Seconds()*1000)
-						col_data = append(col_data, int64(dur.Seconds()*1000))
+						col_data = append(col_data, int64(dur.Seconds() * 1000))
 					}
 					col_data_k := &kdb.K{kdb.KT, kdb.NONE, col_data}
 					values = append(values, col_data_k)
@@ -432,7 +530,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 // TODO
 func getNumDate(datetime time.Time, local *time.Location) float64 {
 	var qEpoch = time.Date(2000, time.January, 1, 0, 0, 0, 0, local)
-	diff := ((float64)(datetime.UnixNano()-qEpoch.UnixNano()) / (float64)(864000*100000000))
+	diff := ((float64)(datetime.UnixNano() - qEpoch.UnixNano()) / (float64)(864000 * 100000000))
 	return diff
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/llmofang/kdbutils"
 	"github.com/llmofang/kdbutils/tbls"
 	l4g "github.com/alecthomas/log4go"
+	"time"
 )
 
 func main() {
@@ -12,11 +13,11 @@ func main() {
 	var port int
 	host = "139.196.77.165"
 	port = 5034
-	kdb := kdbutils.MewKdb(host, port)
+	kdb := kdbutils.NewKdb(host, port)
 
 	kdb.Connect()
 	//test_query_table(kdb)
-	//test_subscribe(kdb)
+	test_subscribe(kdb)
 	//time.Sleep(10 * time.Second)
 	//
 	//for {
@@ -25,27 +26,40 @@ func main() {
 
 	//test for transaction
 	// tlast
-	kdb_tlast := kdbutils.MewKdb(host, 5034)
-	kdb_tlast.Connect()
-	query := "0!select from Transaction"
-	trans := make([]tbls.Transaction, 0)
-	// ohlcv := tbls.Ohlcv{}
-	if result, err := kdb.QueryNoneKeyedTable(query, &trans); err == nil {
-		res := result.([]tbls.Transaction)
-		for i := 0; i < len(res); i++ {
-			transaction := res[i]
-			l4g.Debug("sym: %v, min: %v, open: %v, high: %v, l",
-				transaction.Sym, transaction.Time, transaction.NPrice)
-		}
-	}
+	//kdb_tlast := kdbutils.NewKdb(host, 5034)
+	//kdb_tlast.Connect()
+	//query := "0!select from Transaction"
+	//trans := make([]tbls.Transaction, 0)
+	//// ohlcv := tbls.Ohlcv{}
+	//if result, err := kdb.QueryNoneKeyedTable(query, &trans); err == nil {
+	//	res := result.([]tbls.Transaction)
+	//	for i := 0; i < len(res); i++ {
+	//		transaction := res[i]
+	//		l4g.Debug("sym: %v, min: %v, open: %v, high: %v, l",
+	//			transaction.Sym, transaction.Time, transaction.NPrice)
+	//	}
+	//}
 }
 
 func test_subscribe(kdb *kdbutils.Kdb) {
 
 	//  sym := []string{} // default is all
 	sym := []string{"000001", "601818"}
+	sym2 := []string{"000001", "601817", "601813", "601818"}
 	kdb.Subscribe("ohlcv", sym)
 	kdb.Subscribe("Transaction", sym)
+
+	kdb.SubTable("Ohlcv")
+	kdb.SubTable("Market")
+	kdb.SubSym(sym)
+	kdb.SubSym(sym)
+	kdb.SubSym(sym2)
+	kdb.UnSubSym(sym)
+	kdb.UnSubSym(sym)
+	kdb.UnSubSym(sym)
+	kdb.UnSubSym(sym)
+
+
 
 	ch := make(chan interface{}, 1000)
 	table2struct := make(map[string]kdbutils.Factory_New)
@@ -86,6 +100,8 @@ func test_subscribe(kdb *kdbutils.Kdb) {
 			}
 		}
 	}()
+
+	time.Sleep(1000*time.Second)
 }
 
 func test_query_table(kdb *kdbutils.Kdb) {
