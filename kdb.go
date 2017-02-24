@@ -11,6 +11,7 @@ import (
 	"sync"
 	"github.com/llmofang/kdbutils/comm"
 	"github.com/llmofang/kdbgo"
+	"github.com/llmofang/kdbutils/tbls"
 )
 
 // ref: http://stackoverflow.com/questions/10210188/instance-new-type-golang
@@ -23,16 +24,37 @@ type Kdb struct {
 	Connection *kdb.KDBConn
 	subscriber comm.Subscriber
 	sub_tables []string
+	InputChan <-chan comm.FuncTable
 	sync.RWMutex
 }
 
 func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
-		sub_tables:make([]string, 0)}
+		sub_tables:make([]string, 0), InputChan:make()}
 
 
 	return kdb
+}
+
+func (this *Kdb) Start()  {
+	if !this.IsConnected() {
+		this.Connect()
+	}
+
+	var data interface{}
+	for {
+		func_table := <-this.InputChan
+		logger.Debug("Channel Market Length: %v", len(this.InputChan))
+
+		switch data.(type) {
+		case comm.FuncTable:
+			this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+		default:
+			logger.Error("Unkown data type, data: %v", data)
+		}
+	}
+
 }
 
 func (this *Kdb) Connect() error {
@@ -136,8 +158,6 @@ func (this *Kdb) UnSubSym(sym []string) {
 		}
 	}
 }
-
-
 
 func (this *Kdb) SubTable(table string) {
 
