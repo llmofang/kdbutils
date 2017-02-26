@@ -1,7 +1,6 @@
 package kdbutils
 
 import (
-
 	logger "github.com/alecthomas/log4go"
 	"fmt"
 	"errors"
@@ -11,7 +10,6 @@ import (
 	"sync"
 	"github.com/llmofang/kdbutils/comm"
 	"github.com/llmofang/kdbgo"
-	"github.com/llmofang/kdbutils/tbls"
 )
 
 // ref: http://stackoverflow.com/questions/10210188/instance-new-type-golang
@@ -24,37 +22,35 @@ type Kdb struct {
 	Connection *kdb.KDBConn
 	subscriber comm.Subscriber
 	sub_tables []string
-	InputChan <-chan comm.FuncTable
+	OutputChan chan interface{}
+	InputChan  chan comm.FuncTable
 	sync.RWMutex
 }
 
 func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
-		sub_tables:make([]string, 0), InputChan:make()}
-
+		sub_tables:make([]string, 0), OutputChan:make(chan interface{}), InputChan:make(chan comm.FuncTable)}
 
 	return kdb
 }
 
-func (this *Kdb) Start()  {
+func (this *Kdb) Start(table2struct map[string]Factory_New) {
 	if !this.IsConnected() {
 		this.Connect()
 	}
 
-	var data interface{}
+	go this.GetCommandFromChannel()
+	go this.SubscribedData2Channel(table2struct)
+}
+
+func (this *Kdb) GetCommandFromChannel() {
+	var func_table comm.FuncTable
 	for {
-		func_table := <-this.InputChan
+		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
-
-		switch data.(type) {
-		case comm.FuncTable:
-			this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
-		default:
-			logger.Error("Unkown data type, data: %v", data)
-		}
+		this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
 	}
-
 }
 
 func (this *Kdb) Connect() error {
@@ -70,7 +66,7 @@ func (this *Kdb) Connect() error {
 }
 
 func (this *Kdb) IsConnected() bool {
-	if this.Connection == nil {
+	if this.Connection != nil {
 		return true
 	} else {
 		return false
@@ -172,7 +168,7 @@ func (this *Kdb) SubTable(table string) {
 		this.sub_tables = append(this.sub_tables, table)
 		sym := this.subscriber.ToSlice()
 
-		if len(sym)> 0{
+		if len(sym) > 0 {
 			this.Subscribe(table, sym)
 		} else {
 			logger.Debug("Sym is empty!")
@@ -180,7 +176,7 @@ func (this *Kdb) SubTable(table string) {
 	}
 }
 
-func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct map[string]Factory_New) {
+func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 	for {
 		// ignore type print output
 		res, _, err := this.Connection.ReadMessage()
@@ -203,6 +199,7 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 			continue
 		}
 
+		logger.Debug("data_list: %v", data_list)
 		table_name := data_list[1].Data.(string)
 		logger.Debug("message's table_name: %s", table_name)
 
@@ -239,7 +236,7 @@ func (this *Kdb) SubscribedData2Channel(channel chan <-interface{}, table2struct
 				continue
 			}
 			logger.Debug("before send: %v", row)
-			channel <- row
+			this.OutputChan <- row
 		}
 	}
 }
@@ -276,6 +273,26 @@ func (this *Kdb) QueryNoneKeyedTable(query string, v interface{}) (interface{}, 
 		}
 		return vv.Interface(), nil
 	}
+}
+
+func (this *Kdb) AsyncCall(table string, query string) (error) {
+	if this.Connection == nil {
+		logger.Error("Kdb is not connected")
+		return errors.New("kdb is not connected")
+	}
+
+	// (neg .z.w)(`upd;t;x)
+	async_call := "(neg .z.w)(`upd;`" + table + ";" + query + ")"
+	logger.Info("AsyncCall: %v", async_call)
+	this.Lock()
+	err := this.Connection.AsyncCall(async_call);
+	this.Unlock()
+
+	if err != nil {
+		logger.Error("Kdb query error, query: %v, error: %v", query, err)
+		return errors.New("kdb query error")
+	}
+	return nil
 }
 
 func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]interface{}, error) {
