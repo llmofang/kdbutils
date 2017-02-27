@@ -16,14 +16,14 @@ type Request struct {
 	Qid         string
 	Accountname string
 	Time        time.Time
-	Entrustno   int32
+	Entrustno   int
 	Stockcode   string
 	Askprice    float64
-	Askvol      int32
+	Askvol      int
 	Bidprice    float64
-	Bidvol      int32
-	Withdraw    int32
-	Status      int32
+	Bidvol      int
+	Withdraw    int
+	Status      int
 }
 
 type Request64 struct {
@@ -51,7 +51,7 @@ type Position struct {
 	Sym         string
 	Accountname string
 	Stockcode   string
-	Position    int32
+	Position    int
 	Price       float64
 	Marketprice float64
 	Profit      float64
@@ -62,8 +62,8 @@ type Profit struct {
 	Accountname string
 	Stockcode   string
 	Profit      float64
-	Entrusts    int32
-	Volumes     int32
+	Entrusts    int
+	Volumes     int
 	Amount      float64
 	Fee	    float64
 }
