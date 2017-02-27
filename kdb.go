@@ -49,6 +49,7 @@ func (this *Kdb) GetCommandFromChannel() {
 	for {
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
+		logger.Debug("Get new func_table", func_table)
 		this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
 	}
 }
@@ -459,6 +460,16 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
+			//case reflect.Int: {
+			//	var col_data = []int{}
+			//	for j := 0; j < data_value.Len(); j++ {
+			//		col_data = append(col_data, data_value.Index(j).Field(i).Interface().(int))
+			//		// col_data = append(col_data, reflect.ValueOf(data_value.Index(j).Field(i).Interface()).Convert(test.Interface().Type()))
+			//		// col_data = append(col_data, data_value.Index(j).Field(i).Convert(reflect.Int64))
+			//	}
+			//	col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
+			//	values = append(values, col_data_k)
+			//}
 			case reflect.Float32: {
 				var col_data = []float32{}
 				for j := 0; j < data_value.Len(); j++ {
@@ -475,14 +486,14 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KF, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
-			case reflect.Bool: {
-				var col_data = []bool{}
-				for j := 0; j < data_value.Len(); j++ {
-					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(bool))
-				}
-				col_data_k := &kdb.K{kdb.KB, kdb.NONE, col_data}
-				values = append(values, col_data_k)
-			}
+			//case reflect.Bool: {
+			//	var col_data = []bool{}
+			//	for j := 0; j < data_value.Len(); j++ {
+			//		col_data = append(col_data, data_value.Index(j).Field(i).Interface().(bool))
+			//	}
+			//	col_data_k := &kdb.K{kdb.KB, kdb.NONE, col_data}
+			//	values = append(values, col_data_k)
+			//}
 			case reflect.String: {
 				var col_data = []string{}
 				for j := 0; j < data_value.Len(); j++ {
