@@ -26,6 +26,11 @@ func MewKdb(host string, port int) *Kdb {
 	return kdb
 }
 
+
+func(this *Kdb)Close()error{
+	return this.Connection.Close()
+}
+
 func (this *Kdb) Connect() error {
 	logger.Info("connecting to kdb, host: %v, port:%v", this.Host, this.Port)
 	var err error
@@ -195,7 +200,7 @@ func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]inter
 
 func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
 	if table, err := Slice2KTable(data); err == nil {
-		//logger.Debug("table: %v", table)
+		logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
 		if ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab); err != nil {
 			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v, return: %v",
@@ -226,6 +231,7 @@ func MarshalTable(v interface{}, table kdb.Table) (e1 error, t kdb.Table) {
 
 		switch vv.Field(i).Kind() {
 		case reflect.Struct: {
+			fmt.Println("struct===================")
 			typ := vv.Field(i).Type()
 			if vv.Field(i).NumField() == 3 && typ.Field(0).Name == "sec" && typ.Field(1).Name == "nsec" {
 				//m := vv.Field(k).MethodByName("Local")
@@ -252,6 +258,7 @@ func MarshalTable(v interface{}, table kdb.Table) (e1 error, t kdb.Table) {
 			values = append(values, tempk)
 		}
 		case reflect.Int64: {
+			fmt.Println("int64===================")
 			keys = append(keys, strings.ToLower(vv.Type().Field(i).Name))
 			var tempk = &kdb.K{kdb.KI, kdb.NONE, []int32{aa.Field(i).Interface().(int32)}}
 			values = append(values, tempk)
@@ -298,15 +305,17 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			//	continue
 			//}
 			col_name := data_value.Index(0).Type().Field(i).Name
+			//fmt.Println(col_name)
 			// logger.Debug(col_name)
 			// keys = append(keys, strings.ToLower(col_name))
 			keys = append(keys, strings.ToLower(col_name[0:1])+col_name[1:])
-			kind := data_value.Index(0).Field(i).Kind()
+			//kind := data_value.Index(0).Field(i).Kind()
+			tp:=data_value.Index(0).Field(i).Interface()
+			//fmt.Println("kind",data_value.Index(0).Field(i).Kind())
+			//fmt.Println("type",data_value.Index(0).Field(i).Type())
 			// logger.Debug(kind)
-
-			switch kind {
-
-			case reflect.Int32: {
+			switch tp.(type){
+			case int32:{
 				var col_data = []int32{}
 				for j := 0; j < data_value.Len(); j++ {
 					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(int32))
@@ -314,39 +323,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
-			case reflect.Int64: {
-				var col_data = []int64{}
-				for j := 0; j < data_value.Len(); j++ {
-					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(int64))
-				}
-				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
-				values = append(values, col_data_k)
-			}
-			case reflect.Float32: {
-				var col_data = []float32{}
-				for j := 0; j < data_value.Len(); j++ {
-					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(float32))
-				}
-				col_data_k := &kdb.K{kdb.KF, kdb.NONE, col_data}
-				values = append(values, col_data_k)
-			}
-			case reflect.Float64: {
-				var col_data = []float64{}
-				for j := 0; j < data_value.Len(); j++ {
-					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(float64))
-				}
-				col_data_k := &kdb.K{kdb.KF, kdb.NONE, col_data}
-				values = append(values, col_data_k)
-			}
-			case reflect.Bool: {
-				var col_data = []bool{}
-				for j := 0; j < data_value.Len(); j++ {
-					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(bool))
-				}
-				col_data_k := &kdb.K{kdb.KB, kdb.NONE, col_data}
-				values = append(values, col_data_k)
-			}
-			case reflect.String: {
+			case string:{
 				var col_data = []string{}
 				for j := 0; j < data_value.Len(); j++ {
 					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(string))
@@ -354,76 +331,118 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KS, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
-			case reflect.Struct: {
-				v := data_value.Index(0).Field(i).Interface()
-				switch t:= v.(type) {
-
-				// TODO
-				case time.Time:
-					var col_data = []float64{}
-					for j := 0; j < data_value.Len(); j++ {
-						m := data_value.Index(j).Field(i).MethodByName("Local")
-						rets := m.Call([]reflect.Value{})
-						var t time.Time = rets[0].Interface().(time.Time)
-						m2 := data_value.Index(j).Field(i).MethodByName("Location")
-						rets2 := m2.Call([]reflect.Value{})
-						var l *time.Location = rets2[0].Interface().(*time.Location)
-						var timeFloat64 float64 = getNumDate(t, l)
-						col_data = append(col_data, timeFloat64)
-					}
-					col_data_k := &kdb.K{kdb.KZ, kdb.NONE, col_data}
-					values = append(values, col_data_k)
-				case kdb.Minute:
-					var col_data = []int32{}
-					for j := 0; j < data_value.Len(); j++ {
-						v_kdb := data_value.Index(j).Field(i).Interface().(kdb.Minute)
-						//logger.Debug("v_kdb minute: %v", v_kdb)
-						tt := time.Time(v_kdb)
-						dur := tt.Sub(time.Time{})
-						//logger.Debug("Duration: %v, minutes: %v", dur, dur.Minutes())
-						col_data = append(col_data, int32(dur.Minutes()))
-					}
-					col_data_k := &kdb.K{kdb.KU, kdb.NONE, col_data}
-					values = append(values, col_data_k)
-				case kdb.Second:
-					var col_data = []int32{}
-					for j := 0; j < data_value.Len(); j++ {
-						v_kdb := data_value.Index(j).Field(i).Interface().(kdb.Second)
-						//logger.Debug("v_kdb second: %v", v_kdb)
-						tt := time.Time(v_kdb)
-						dur := tt.Sub(time.Time{})
-						//logger.Debug("Duration: %v, seconds: %v", dur, dur.Seconds())
-						col_data = append(col_data, int32(dur.Seconds()))
-					}
-					col_data_k := &kdb.K{kdb.KV, kdb.NONE, col_data}
-					values = append(values, col_data_k)
-
-				case kdb.Time:
-					var col_data = []int64{}
-					qEpoch := time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
-					for j := 0; j < data_value.Len(); j++ {
-						v_kdb := data_value.Index(0).Field(i).Interface().(kdb.Time)
-						//logger.Debug("v_kdb time: %v", v_kdb)
-						tt := time.Time(v_kdb)
-						dur := tt.Sub(qEpoch)
-						//logger.Debug("Duration: %v, Millisecond: %v", dur, dur.Seconds()*1000)
-						col_data = append(col_data, int64(dur.Seconds()*1000))
-					}
-					col_data_k := &kdb.K{kdb.KT, kdb.NONE, col_data}
-					values = append(values, col_data_k)
-
-				default:
-					logger.Error("Unkonwn struct, type: %v", t)
-					return table, errors.New("Unkown struct")
+			case int64: {
+				var col_data = []int64{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(int64))
+				}
+				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			}
+			//byte
+			case uint8:
+				var col_data = []byte{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(byte))
 
 				}
+				col_data_k := &kdb.K{kdb.KC, kdb.NONE, string(col_data)}
+				values = append(values, col_data_k)
+			case float32: {
+				var col_data = []float32{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(float32))
+				}
+				col_data_k := &kdb.K{kdb.KF, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			}
+			case float64: {
+				var col_data = []float64{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(float64))
+				}
+				col_data_k := &kdb.K{kdb.KF, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			}
+			case bool: {
+				var col_data = []bool{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(bool))
+				}
+				col_data_k := &kdb.K{kdb.KB, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			}
+			case time.Time:
+				var col_data = []float64{}
+				for j := 0; j < data_value.Len(); j++ {
+					m := data_value.Index(j).Field(i).MethodByName("Local")
+					rets := m.Call([]reflect.Value{})
+					var t time.Time = rets[0].Interface().(time.Time)
+					m2 := data_value.Index(j).Field(i).MethodByName("Location")
+					rets2 := m2.Call([]reflect.Value{})
+					var l *time.Location = rets2[0].Interface().(*time.Location)
+					var timeFloat64 float64 = getNumDate(t, l)
+					col_data = append(col_data, timeFloat64)
+				}
+				col_data_k := &kdb.K{kdb.KZ, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+
+			case kdb.Minute:
+				var col_data = []int32{}
+				for j := 0; j < data_value.Len(); j++ {
+					v_kdb := data_value.Index(j).Field(i).Interface().(kdb.Minute)
+					//logger.Debug("v_kdb minute: %v", v_kdb)
+					tt := time.Time(v_kdb)
+					dur := tt.Sub(time.Time{})
+					//logger.Debug("Duration: %v, minutes: %v", dur, dur.Minutes())
+					col_data = append(col_data, int32(dur.Minutes()))
+				}
+				col_data_k := &kdb.K{kdb.KU, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			case kdb.Second:
+				var col_data = []int32{}
+				for j := 0; j < data_value.Len(); j++ {
+					v_kdb := data_value.Index(j).Field(i).Interface().(kdb.Second)
+					//logger.Debug("v_kdb second: %v", v_kdb)
+					tt := time.Time(v_kdb)
+					dur := tt.Sub(time.Time{})
+					//logger.Debug("Duration: %v, seconds: %v", dur, dur.Seconds())
+					col_data = append(col_data, int32(dur.Seconds()))
+				}
+				col_data_k := &kdb.K{kdb.KV, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+
+			case kdb.Time:
+				var col_data = []int64{}
+				qEpoch := time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				for j := 0; j < data_value.Len(); j++ {
+					v_kdb := data_value.Index(0).Field(i).Interface().(kdb.Time)
+					//logger.Debug("v_kdb time: %v", v_kdb)
+					tt := time.Time(v_kdb)
+					dur := tt.Sub(qEpoch)
+					//logger.Debug("Duration: %v, Millisecond: %v", dur, dur.Seconds()*1000)
+					col_data = append(col_data, int64(dur.Seconds()*1000))
+				}
+				col_data_k := &kdb.K{kdb.KT, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			case time.Duration:
+				var col_data=[]time.Duration{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(time.Duration))
+				}
+				col_data_k := &kdb.K{kdb.KN, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+
+			default:
+				logger.Error("Unkonwn struct,data: %V name: %v type: %v",data_value.Index(0), data_value.Index(0).Field(i),data_value.Index(0).Field(i).Type())
+				return table, errors.New("Unkown struct")
 
 			}
-			}
-			//logger.Debug("keys: %v, values: %v", keys, values)
 
 		}
-	}
+		logger.Debug("keys: %v, values: %v", keys, values)
+
+		}
 	table.Columns = keys
 	table.Data = values
 	return table, nil
