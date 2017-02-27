@@ -478,19 +478,6 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
-<<<<<<< HEAD
-			//case reflect.Int: {
-			//	var col_data = []int{}
-			//	for j := 0; j < data_value.Len(); j++ {
-			//		col_data = append(col_data, data_value.Index(j).Field(i).Interface().(int))
-			//		// col_data = append(col_data, reflect.ValueOf(data_value.Index(j).Field(i).Interface()).Convert(test.Interface().Type()))
-			//		// col_data = append(col_data, data_value.Index(j).Field(i).Convert(reflect.Int64))
-			//	}
-			//	col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
-			//	values = append(values, col_data_k)
-			//}
-			case reflect.Float32: {
-=======
 			//byte
 			case uint8:
 				var col_data = []byte{}
@@ -501,7 +488,6 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KC, kdb.NONE, string(col_data)}
 				values = append(values, col_data_k)
 			case float32: {
->>>>>>> e8dabf77b1dcf819b65e713d040f618fa2f45075
 				var col_data = []float32{}
 				for j := 0; j < data_value.Len(); j++ {
 					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(float32))
@@ -517,18 +503,6 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KF, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
-<<<<<<< HEAD
-			//case reflect.Bool: {
-			//	var col_data = []bool{}
-			//	for j := 0; j < data_value.Len(); j++ {
-			//		col_data = append(col_data, data_value.Index(j).Field(i).Interface().(bool))
-			//	}
-			//	col_data_k := &kdb.K{kdb.KB, kdb.NONE, col_data}
-			//	values = append(values, col_data_k)
-			//}
-			case reflect.String: {
-				var col_data = []string{}
-=======
 			case bool: {
 				var col_data = []bool{}
 				for j := 0; j < data_value.Len(); j++ {
@@ -539,7 +513,6 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			}
 			case time.Time:
 				var col_data = []float64{}
->>>>>>> e8dabf77b1dcf819b65e713d040f618fa2f45075
 				for j := 0; j < data_value.Len(); j++ {
 					m := data_value.Index(j).Field(i).MethodByName("Local")
 					rets := m.Call([]reflect.Value{})
@@ -613,7 +586,6 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 	table.Data = values
 	return table, nil
 }
-
 
 // TODO
 func getNumDate(datetime time.Time, local *time.Location) float64 {
