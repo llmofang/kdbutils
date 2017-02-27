@@ -35,11 +35,11 @@ func NewKdb(host string, port int) *Kdb {
 	return kdb
 }
 
-<<<<<<< HEAD
 
-func(this *Kdb)Close()error{
+func(this *Kdb)Close()error {
 	return this.Connection.Close()
-=======
+}
+
 func (this *Kdb) Start(table2struct map[string]Factory_New) {
 	if !this.IsConnected() {
 		this.Connect()
@@ -56,7 +56,7 @@ func (this *Kdb) GetCommandFromChannel() {
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
 		this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
 	}
->>>>>>> 6a6bb84348381062630d1477e3a12421b743808e
+
 }
 
 func (this *Kdb) Connect() error {
