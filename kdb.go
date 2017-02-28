@@ -342,10 +342,12 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 		this.Unlock()
 
 		if err != nil {
-			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v, return: %v",
-				func_name, table_name, err, ret)
+			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, data: %v, error: %v, return: %v",
+				func_name, table_name, data, err, ret)
 			return nil, errors.New("Execute kdb function failed")
 		} else {
+			logger.Error("Execute kdb function successful, func_name: %v, table_name: %v, data: %v, error: %v, return: %v",
+				func_name, table_name, data, err, ret)
 			return nil, nil
 		}
 	} else {
