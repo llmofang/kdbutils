@@ -47,6 +47,12 @@ func (this *Kdb) Start(table2struct map[string]Factory_New) {
 
 	go this.GetCommandFromChannel()
 	go this.SubscribedData2Channel(table2struct)
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			this.subscriber.Dump()
+		}
+	}()
 }
 
 func (this *Kdb) GetCommandFromChannel() {
@@ -55,7 +61,25 @@ func (this *Kdb) GetCommandFromChannel() {
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
 		logger.Debug("Get new func_table", func_table)
-		this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+		switch func_table.FuncName {
+		case "":
+			logger.Error("FuncTable's FuncName is empty, func_table: %v", func_table)
+		case comm.SubFunc:
+			if func_table.TableName == "" {
+				sym := func_table.Data.([]string)
+				this.SubSym(sym)
+			} else {
+				sym := func_table.Data.([]string)
+				this.Subscribe(func_table.TableName, sym)
+			}
+		case comm.UnSubFunc:
+			if func_table.TableName == "" {
+				sym := func_table.Data.([]string)
+				this.UnSubSym(sym)
+			}
+		default:
+			this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+		}
 	}
 
 }
@@ -206,7 +230,6 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			continue
 		}
 
-		logger.Debug("data_list: %v", data_list)
 		table_name := data_list[1].Data.(string)
 		logger.Debug("message's table_name: %s", table_name)
 
@@ -338,16 +361,16 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
 
 		this.Lock()
-		ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
+		err := this.Connection.AsyncCall(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
 		this.Unlock()
 
 		if err != nil {
-			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, data: %v, error: %v, return: %v",
-				func_name, table_name, data, err, ret)
+			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, data: %v, error: %v",
+				func_name, table_name, data, err)
 			return nil, errors.New("Execute kdb function failed")
 		} else {
-			logger.Error("Execute kdb function successful, func_name: %v, table_name: %v, data: %v, error: %v, return: %v",
-				func_name, table_name, data, err, ret)
+			logger.Info("Execute kdb function successful, func_name: %v, table_name: %v, data: %v, error: %v",
+				func_name, table_name, data, err)
 			return nil, nil
 		}
 	} else {
