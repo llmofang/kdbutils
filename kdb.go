@@ -47,12 +47,10 @@ func (this *Kdb) Start(table2struct map[string]Factory_New) {
 
 	go this.GetCommandFromChannel()
 	go this.SubscribedData2Channel(table2struct)
-	go func() {
-		for {
-			time.Sleep(10 * time.Second)
-			this.subscriber.Dump()
-		}
-	}()
+}
+
+func (this *Kdb) DumpSubscriber() {
+	this.subscriber.Dump()
 }
 
 func (this *Kdb) GetCommandFromChannel() {
