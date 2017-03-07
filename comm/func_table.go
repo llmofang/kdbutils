@@ -2,6 +2,7 @@ package comm
 
 const (
 	UPDFunc string = "upd"
+	UserQuotaUPDFunc string = "userquotaupd"
 	SubFunc string = "Sub"
 	UnSubFunc string = "UnSub"
 	UserQuotaTable string = "UserQuota"
