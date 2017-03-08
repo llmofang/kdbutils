@@ -2,6 +2,7 @@ package comm
 
 const (
 	UPDFunc string = "upd"
+	WSUPDFunc string = "p2wsupd"
 	UserQuotaUPDFunc string = "userquotaupd"
 	SubFunc string = "Sub"
 	UnSubFunc string = "UnSub"
@@ -14,8 +15,8 @@ const (
 	Response4WebTable string = "response"
 	Response4NativeTable string = "response1"
 	MarketTable string = "Market"
-	PositionTable string = "Position1"
-	ProfitTable string = "Profit1"
+	PositionTable string = "Position"
+	ProfitTable string = "Profit"
 
 )
 
