@@ -2,6 +2,8 @@ package tbls
 
 import (
 	"time"
+	"code.google.com/p/go-uuid/uuid"
+	"strings"
 )
 
 /**
@@ -9,6 +11,18 @@ kdb table define:
 Position:3!flip `sym`accountname`stockcode`position`price`marketprice`profit!"sssifff"$\:()
 Profit:3!flip `sym`accountname`stockcode`profit`entrusts`volumes`amount`fee!"sssfiiff"$\:()
  */
+
+const(
+	STATUS_UNREPORTED int=iota
+	STATUS_REPORTED
+	STATUS_NOTTRADED
+	STATUS_NOTCANCELED
+	STATUS_TRADED
+	STATUS_CANCELED
+	STATUS_BADORDER
+)
+
+
 
 
 type Request struct {
@@ -67,6 +81,23 @@ type Profit struct {
 	Amount      float64
 	Fee	    float64
 }
+
+
+func NewEntrust(sym string,accountname string,stockcode string,price float64,vol int32)*Entrust {
+	entrust := &Entrust{}
+	entrust.Sym = sym
+	entrust.Accountname = accountname
+	entrust.Askprice = price
+	entrust.Askvol = vol
+	entrust.Qid =strings.Replace(uuid.New(),"-","",-1)
+	entrust.Status = 1
+	entrust.Time = time.Now()
+	entrust.Stockcode = stockcode
+	return entrust
+
+}
+
+
 
 
 

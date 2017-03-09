@@ -3,7 +3,12 @@ package connectionpool
 import (
 	"sync"
 	"fmt"
+	"time"
 )
+/**
+/默认初始连接10,，每次增加5，最大连接200
+
+ */
 
 type ConnectionPool struct{
 	host string
@@ -14,6 +19,7 @@ type ConnectionPool struct{
 	incrementalNums int
 	connIndex int
 	connNums int
+	isMax bool
 	sync.RWMutex
 
 
@@ -24,12 +30,13 @@ func NewConnectionPool(host string,port int)*ConnectionPool{
 	connectionPool.host=host
 	connectionPool.port=port
 	connectionPool.connections=NewStack()
-	connectionPool.initialConnNums=100
+	connectionPool.initialConnNums=10
 	// maxConnNums <0 表示没有最大连接数量
 	connectionPool.maxConnNums=200
 	connectionPool.incrementalNums=5
 	connectionPool.connIndex=0
 	connectionPool.connNums=0
+	connectionPool.isMax=false
 	return &connectionPool
 }
 
@@ -64,11 +71,16 @@ func (this *ConnectionPool)CreatePool(){
 
 
 func(this *ConnectionPool)CreateConnections(num int){
+
 	this.Lock()
 	defer this.Unlock()
+	if this.isMax==true{
+		return
+	}
 	for i:=0;i<num;i++{
 		if(this.maxConnNums>0&&this.connNums>=this.maxConnNums){
 			fmt.Println("connections is reach max connection numbers",this.connections.Len(),this.maxConnNums)
+			this.isMax=true
 			return
 		}
 		conn:=this.newConnection()
@@ -80,7 +92,6 @@ func(this *ConnectionPool)CreateConnections(num int){
 
 func(this *ConnectionPool)newConnection()*PooledKDB{
 	id:=this.NextIndex()
-	fmt.Println("this connection id ",id)
 	pooledKDB:=NewPooledKDB(this.host,this.port,id)
 	pooledKDB.Connect()
 	//if len(this.connections)==0{
@@ -90,14 +101,20 @@ func(this *ConnectionPool)newConnection()*PooledKDB{
 }
 
 func(this *ConnectionPool)GetConnection()*PooledKDB{
-	connection:=this.findFreeConnection()
-	if connection==nil{
-		this.CreateConnections(this.incrementalNums)
-	}else{
-		return connection
+	for {
+
+		connection:=this.findFreeConnection()
+		if connection!=nil{
+			return connection
+		}
+		if connection==nil&&!this.isMax{
+			this.CreateConnections(this.incrementalNums)
+		}else{
+			time.Sleep(100*time.Millisecond)
+		}
+
 	}
-	connection=this.findFreeConnection()
-	return connection
+
 
 }
 

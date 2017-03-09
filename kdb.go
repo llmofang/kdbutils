@@ -24,21 +24,32 @@ type Kdb struct {
 	sub_tables []string
 	OutputChan chan interface{}
 	InputChan  chan comm.FuncTable
+	channelClosed bool
+	closed bool
 	sync.RWMutex
+
+
 }
 
 func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
-		sub_tables:make([]string, 0), OutputChan:make(chan interface{}), InputChan:make(chan comm.FuncTable)}
+		sub_tables:make([]string, 0), OutputChan:make(chan interface{},100), InputChan:make(chan comm.FuncTable,100),channelClosed:false,closed:false}
 
 	return kdb
 }
 
 
 func(this *Kdb)Close()error {
+
 	return this.Connection.Close()
 }
+
+func(this *Kdb)CloseOutputChan(){
+	this.channelClosed=true
+}
+
+
 
 func (this *Kdb) Start(table2struct map[string]Factory_New) {
 	if !this.IsConnected() {
@@ -52,6 +63,9 @@ func (this *Kdb) Start(table2struct map[string]Factory_New) {
 func (this *Kdb) GetCommandFromChannel() {
 	var func_table comm.FuncTable
 	for {
+		if this.closed{
+			return
+		}
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
 		logger.Debug("Get new func_table", func_table)
@@ -82,6 +96,8 @@ func (this *Kdb) IsConnected() bool {
 
 func (this *Kdb) Disconnect() error {
 	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
+	this.CloseOutputChan()
+	this.closed=true
 	err := this.Connection.Close()
 	if err == nil {
 		logger.Info("disconnected to kdb successful")
@@ -185,6 +201,11 @@ func (this *Kdb) SubTable(table string) {
 
 func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 	for {
+		if this.channelClosed||this.closed{
+			return
+		}
+
+
 		// ignore type print output
 		res, _, err := this.Connection.ReadMessage()
 		if err != nil {
@@ -209,7 +230,6 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 		logger.Debug("data_list: %v", data_list)
 		table_name := data_list[1].Data.(string)
 		logger.Debug("message's table_name: %s", table_name)
-
 		var factory Factory_New
 		match := false
 		for tab, fn := range table2struct {
@@ -220,6 +240,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			}
 		}
 		if !match {
+			logger.Error("table name not match")
 			continue
 		}
 
@@ -334,7 +355,7 @@ func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]inter
 
 func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
 	if table, err := Slice2KTable(data); err == nil {
-		logger.Debug("table: %v", table)
+		//logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
 
 		this.Lock()
@@ -579,7 +600,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			}
 
 		}
-		logger.Debug("keys: %v, values: %v", keys, values)
+		//logger.Debug("keys: %v, values: %v", keys, values)
 
 	}
 	table.Columns = keys
