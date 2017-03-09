@@ -115,7 +115,7 @@ func (this *Kdb) Disconnect() error {
 
 func (this *Kdb) Subscribe(table string, sym []string) {
 	sym_num := len(sym)
-	logger.Info("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
+	logger.Debug("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
 	var err error
 
 	this.Lock()
@@ -135,10 +135,10 @@ func (this *Kdb) Subscribe(table string, sym []string) {
 
 func (this *Kdb) SubSym(sym []string) {
 
-	logger.Info("SubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
+	logger.Debug("SubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
 
 	if len(this.sub_tables) == 0 || len(sym) == 0 {
-		logger.Info("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
+		logger.Debug("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
 		return
 	}
 
@@ -159,10 +159,10 @@ func (this *Kdb) SubSym(sym []string) {
 
 func (this *Kdb) UnSubSym(sym []string) {
 
-	logger.Info("UnSubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
+	logger.Debug("UnSubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
 
 	if len(this.sub_tables) == 0 || len(sym) == 0 {
-		logger.Info("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
+		logger.Debug("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
 		return
 	}
 
@@ -311,7 +311,7 @@ func (this *Kdb) AsyncCall(table string, query string) (error) {
 
 	// (neg .z.w)(`upd;t;x)
 	async_call := "(neg .z.w)(`upd;`" + table + ";" + query + ")"
-	logger.Info("AsyncCall: %v", async_call)
+	logger.Debug("AsyncCall: %v", async_call)
 	this.Lock()
 	err := this.Connection.AsyncCall(async_call);
 	this.Unlock()
