@@ -367,7 +367,7 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 				func_name, table_name, data, err)
 			return nil, errors.New("Execute kdb function failed")
 		} else {
-			logger.Info("Execute kdb function successful, func_name: %v, table_name: %v, data: %v, error: %v",
+			logger.Debug("Execute kdb function successful, func_name: %v, table_name: %v, data: %v, error: %v",
 				func_name, table_name, data, err)
 			return nil, nil
 		}
