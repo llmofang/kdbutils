@@ -45,6 +45,9 @@ type Response Request
 type Response64 Request64
 
 type Entrust Request
+
+type RequestXX Request
+
 type Entrust64 Request64
 
 type Position struct {

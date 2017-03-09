@@ -17,6 +17,7 @@ const (
 	MarketTable string = "Market"
 	PositionTable string = "Position"
 	ProfitTable string = "Profit"
+	AutoAccount string = "AUTO"
 
 )
 

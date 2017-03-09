@@ -30,7 +30,7 @@ type Kdb struct {
 func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
-		sub_tables:make([]string, 0), OutputChan:make(chan interface{}), InputChan:make(chan comm.FuncTable)}
+		sub_tables:make([]string, 0), OutputChan:make(chan interface{}, 10000), InputChan:make(chan comm.FuncTable, 10000)}
 
 	return kdb
 }
