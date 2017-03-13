@@ -2,7 +2,7 @@ package comm
 
 const (
 	UPDFunc string = "upd"
-	WSUPDFunc string = "p2wsupd"
+	ProfitUPDFunc string = "profit_upd"
 	PositionUPDFunc string = "position_upd"
 	UserQuotaUPDFunc string = "userquotaupd"
 	SubFunc string = "Sub"
