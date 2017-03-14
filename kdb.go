@@ -353,6 +353,27 @@ func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]inter
 	}
 }
 
+func (this *Kdb) AsyncFuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
+	if table, err := Slice2KTable(data); err == nil {
+		//logger.Debug("table: %v", table)
+		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
+
+		//this.Lock()
+		err := this.Connection.AsyncCall(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
+		//this.Unlock()
+
+		if err != nil {
+			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v",
+				func_name, table_name, err)
+			return nil, errors.New("Execute kdb function failed")
+		} else {
+			return nil
+		}
+	} else {
+		return errors.New("Slice2KTable error")
+	}
+}
+
 func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
 	if table, err := Slice2KTable(data); err == nil {
 		//logger.Debug("table: %v", table)
@@ -373,6 +394,9 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 		return nil, errors.New("Slice2KTable error")
 	}
 }
+
+
+
 
 func MarshalTable(v interface{}, table kdb.Table) (e1 error, t kdb.Table) {
 	var err error = nil

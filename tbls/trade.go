@@ -13,7 +13,7 @@ Profit:3!flip `sym`accountname`stockcode`profit`entrusts`volumes`amount`fee!"sss
  */
 
 const(
-	STATUS_UNREPORTED int=iota
+	STATUS_UNREPORTED int32=iota
 	STATUS_REPORTED
 	STATUS_NOTTRADED
 	STATUS_NOTCANCELED
@@ -90,7 +90,7 @@ func NewEntrust(sym string,accountname string,stockcode string,price float64,vol
 	entrust.Askprice = price
 	entrust.Askvol = vol
 	entrust.Qid =strings.Replace(uuid.New(),"-","",-1)
-	entrust.Status = 1
+	entrust.Status = 0
 	entrust.Time = time.Now()
 	entrust.Stockcode = stockcode
 	return entrust

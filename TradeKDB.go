@@ -18,7 +18,8 @@ func NewTradeKDB(host string, port int)*TradeKDB{
 	tradeKDB.TableStruct["request"]=func() interface{} {
 		return new(tbls.Entrust)
 	}
-	tradeKDB.TableStruct["Position"]=func() interface{} {
+
+	tradeKDB.TableStruct["Position1"]=func() interface{} {
 		return new(tbls.Position)
 	}
 	return &tradeKDB
