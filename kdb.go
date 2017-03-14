@@ -34,7 +34,8 @@ type Kdb struct {
 func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
-		sub_tables:make([]string, 0), OutputChan:make(chan interface{},100), InputChan:make(chan comm.FuncTable,100),channelClosed:false,closed:false}
+		sub_tables:make([]string, 0), OutputChan:make(chan interface{}, 10000), InputChan:make(chan comm.FuncTable, 10000)}
+
 
 	return kdb
 }
@@ -60,6 +61,10 @@ func (this *Kdb) Start(table2struct map[string]Factory_New) {
 	go this.SubscribedData2Channel(table2struct)
 }
 
+func (this *Kdb) DumpSubscriber() {
+	this.subscriber.Dump()
+}
+
 func (this *Kdb) GetCommandFromChannel() {
 	var func_table comm.FuncTable
 	for {
@@ -69,7 +74,25 @@ func (this *Kdb) GetCommandFromChannel() {
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
 		logger.Debug("Get new func_table", func_table)
-		this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+		switch func_table.FuncName {
+		case "":
+			logger.Error("FuncTable's FuncName is empty, func_table: %v", func_table)
+		case comm.SubFunc:
+			if func_table.TableName == "" {
+				sym := func_table.Data.([]string)
+				this.SubSym(sym)
+			} else {
+				sym := func_table.Data.([]string)
+				this.Subscribe(func_table.TableName, sym)
+			}
+		case comm.UnSubFunc:
+			if func_table.TableName == "" {
+				sym := func_table.Data.([]string)
+				this.UnSubSym(sym)
+			}
+		default:
+			this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+		}
 	}
 
 }
@@ -109,7 +132,7 @@ func (this *Kdb) Disconnect() error {
 
 func (this *Kdb) Subscribe(table string, sym []string) {
 	sym_num := len(sym)
-	logger.Info("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
+	logger.Debug("Subscribing Kdb, table: %s, sym: %v, sym_num: %v", table, sym, sym_num)
 	var err error
 
 	this.Lock()
@@ -129,10 +152,10 @@ func (this *Kdb) Subscribe(table string, sym []string) {
 
 func (this *Kdb) SubSym(sym []string) {
 
-	logger.Info("SubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
+	logger.Debug("SubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
 
 	if len(this.sub_tables) == 0 || len(sym) == 0 {
-		logger.Info("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
+		logger.Debug("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
 		return
 	}
 
@@ -153,10 +176,10 @@ func (this *Kdb) SubSym(sym []string) {
 
 func (this *Kdb) UnSubSym(sym []string) {
 
-	logger.Info("UnSubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
+	logger.Debug("UnSubSym parameters, table: %s, sym: %v", this.sub_tables, sym)
 
 	if len(this.sub_tables) == 0 || len(sym) == 0 {
-		logger.Info("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
+		logger.Debug("subtables or sym length is 0, sub_table: %v, sym :%v", this.sub_tables, sym)
 		return
 	}
 
@@ -227,7 +250,6 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			continue
 		}
 
-		logger.Debug("data_list: %v", data_list)
 		table_name := data_list[1].Data.(string)
 		logger.Debug("message's table_name: %s", table_name)
 		var factory Factory_New
@@ -311,7 +333,7 @@ func (this *Kdb) AsyncCall(table string, query string) (error) {
 
 	// (neg .z.w)(`upd;t;x)
 	async_call := "(neg .z.w)(`upd;`" + table + ";" + query + ")"
-	logger.Info("AsyncCall: %v", async_call)
+	logger.Debug("AsyncCall: %v", async_call)
 	this.Lock()
 	err := this.Connection.AsyncCall(async_call);
 	this.Unlock()
@@ -353,7 +375,7 @@ func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]inter
 	}
 }
 
-func (this *Kdb) AsyncFuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
+func (this *Kdb) AsyncFuncTable(func_name string, table_name string, data interface{}) error {
 	if table, err := Slice2KTable(data); err == nil {
 		//logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
@@ -365,7 +387,7 @@ func (this *Kdb) AsyncFuncTable(func_name string, table_name string, data interf
 		if err != nil {
 			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v",
 				func_name, table_name, err)
-			return nil, errors.New("Execute kdb function failed")
+			return  errors.New("Execute kdb function failed")
 		} else {
 			return nil
 		}
@@ -394,6 +416,7 @@ func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}
 		return nil, errors.New("Slice2KTable error")
 	}
 }
+
 
 
 

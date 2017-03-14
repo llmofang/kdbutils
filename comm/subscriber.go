@@ -2,7 +2,7 @@ package comm
 
 import (
 	"sync"
-	// "github.com/alecthomas/log4go"
+	"github.com/alecthomas/log4go"
 )
 
 // 订阅者结构，包含订阅数量的计数
@@ -83,3 +83,11 @@ func (this *Subscriber) ToSlice() []string {
 	return keys
 }
 
+func (this *Subscriber) Dump() {
+	log4go.Debug("Subscriber Dump:")
+	log4go.Debug("==========================================")
+	for key, num := range this.Set {
+		log4go.Debug("key: %v, num: %v", key, num)
+	}
+	log4go.Debug("==========================================")
+}
