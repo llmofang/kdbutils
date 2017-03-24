@@ -55,6 +55,7 @@ func (this *Kdb) DumpSubscriber() {
 
 func (this *Kdb) GetCommandFromChannel() {
 	var func_table comm.FuncTable
+	Test := false
 	for {
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
@@ -76,7 +77,9 @@ func (this *Kdb) GetCommandFromChannel() {
 				this.UnSubSym(sym)
 			}
 		default:
-			this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+			if !Test {
+				this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+			}
 		}
 	}
 
