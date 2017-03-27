@@ -5,6 +5,7 @@ const (
 	ProfitUPDFunc string = "profit_upd"
 	PositionUPDFunc string = "position_upd"
 	UserQuotaUPDFunc string = "userquotaupd"
+	AutoCloseRequestFunc string = "autoclose_upd"
 	SubFunc string = "Sub"
 	UnSubFunc string = "UnSub"
 	UserQuotaTable string = "UserQuota"
@@ -18,6 +19,7 @@ const (
 	MarketTable string = "Market"
 	PositionTable string = "Position"
 	ProfitTable string = "Profit"
+	AutoCloseReuestTable string = "autocloserequest"
 	AutoFlag string = "AUTO"
 	AutoUser string = "AutoTrader"
 

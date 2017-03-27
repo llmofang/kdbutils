@@ -59,7 +59,7 @@ func (this *Kdb) GetCommandFromChannel() {
 	for {
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
-		logger.Debug("Get new func_table", func_table)
+		logger.Debug("Get new command from channel, FuncTable:", func_table)
 		switch func_table.FuncName {
 		case "":
 			logger.Error("FuncTable's FuncName is empty, func_table: %v", func_table)
@@ -78,6 +78,7 @@ func (this *Kdb) GetCommandFromChannel() {
 			}
 		default:
 			if !Test {
+				logger.Debug("FuncTable ......:", func_table)
 				this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
 			}
 		}

@@ -71,5 +71,17 @@ type Profit struct {
 	Fee	    float64
 }
 
+// autocloserequest:1!flip `sym`time`username`accountname`stockcode`volume`status`note!"szsssiis"$\:();
+type AutoCloseRequst struct {
+	Sym string
+	Time time.Time
+	Username string
+	Accountname string
+	Stockcode string
+	Volume int32
+	Status int32
+	Note string
+}
+
 
 
