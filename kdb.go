@@ -24,7 +24,11 @@ type Kdb struct {
 	sub_tables []string
 	OutputChan chan interface{}
 	InputChan  chan comm.FuncTable
+	channelClosed bool
+	closed bool
 	sync.RWMutex
+
+
 }
 
 func NewKdb(host string, port int) *Kdb {
@@ -32,13 +36,21 @@ func NewKdb(host string, port int) *Kdb {
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
 		sub_tables:make([]string, 0), OutputChan:make(chan interface{}, 10000), InputChan:make(chan comm.FuncTable, 10000)}
 
+
 	return kdb
 }
 
 
 func(this *Kdb)Close()error {
+
 	return this.Connection.Close()
 }
+
+func(this *Kdb)CloseOutputChan(){
+	this.channelClosed=true
+}
+
+
 
 func (this *Kdb) Start(table2struct map[string]Factory_New) {
 	if !this.IsConnected() {
@@ -57,6 +69,9 @@ func (this *Kdb) GetCommandFromChannel() {
 	var func_table comm.FuncTable
 	Test := false
 	for {
+		if this.closed{
+			return
+		}
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
 		logger.Debug("Get new command from channel, FuncTable:", func_table)
@@ -108,6 +123,8 @@ func (this *Kdb) IsConnected() bool {
 
 func (this *Kdb) Disconnect() error {
 	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
+	this.CloseOutputChan()
+	this.closed=true
 	err := this.Connection.Close()
 	if err == nil {
 		logger.Info("disconnected to kdb successful")
@@ -211,6 +228,11 @@ func (this *Kdb) SubTable(table string) {
 
 func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 	for {
+		if this.channelClosed||this.closed{
+			return
+		}
+
+
 		// ignore type print output
 		res, _, err := this.Connection.ReadMessage()
 		if err != nil {
@@ -234,7 +256,6 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 
 		table_name := data_list[1].Data.(string)
 		logger.Debug("message's table_name: %s", table_name)
-
 		var factory Factory_New
 		match := false
 		for tab, fn := range table2struct {
@@ -245,6 +266,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			}
 		}
 		if !match {
+			logger.Error("table name not match")
 			continue
 		}
 
@@ -357,28 +379,51 @@ func (this *Kdb) QueryNoneKeydTable2(query string, factory Factory_New) ([]inter
 	}
 }
 
+func (this *Kdb) AsyncFuncTable(func_name string, table_name string, data interface{}) error {
+	if table, err := Slice2KTable(data); err == nil {
+		//logger.Debug("table: %v", table)
+		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
+
+		//this.Lock()
+		err := this.Connection.AsyncCall(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
+		//this.Unlock()
+
+		if err != nil {
+			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v",
+				func_name, table_name, err)
+			return  errors.New("Execute kdb function failed")
+		} else {
+			return nil
+		}
+	} else {
+		return errors.New("Slice2KTable error")
+	}
+}
+
 func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
 	if table, err := Slice2KTable(data); err == nil {
-		logger.Debug("table: %v", table)
+		//logger.Debug("table: %v", table)
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
 
 		this.Lock()
-		err := this.Connection.AsyncCall(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
+		ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
 		this.Unlock()
 
 		if err != nil {
-			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, data: %v, error: %v",
-				func_name, table_name, data, err)
+			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v, return: %v",
+				func_name, table_name, err, ret)
 			return nil, errors.New("Execute kdb function failed")
 		} else {
-			logger.Debug("Execute kdb function successful, func_name: %v, table_name: %v, data: %v, error: %v",
-				func_name, table_name, data, err)
 			return nil, nil
 		}
 	} else {
 		return nil, errors.New("Slice2KTable error")
 	}
 }
+
+
+
+
 
 func MarshalTable(v interface{}, table kdb.Table) (e1 error, t kdb.Table) {
 	var err error = nil
@@ -606,7 +651,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			}
 
 		}
-		logger.Debug("keys: %v, values: %v", keys, values)
+		//logger.Debug("keys: %v, values: %v", keys, values)
 
 	}
 	table.Columns = keys
