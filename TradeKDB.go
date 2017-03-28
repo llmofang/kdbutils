@@ -27,7 +27,7 @@ func NewTradeKDB(host string, port int)*TradeKDB{
 
 func (this * TradeKDB)Trade(entrust *tbls.Entrust){
 
-	this.FuncTable("upd","request",[]tbls.Entrust{*entrust})
+	this.FuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
 }
 
 
@@ -51,5 +51,5 @@ func(this *TradeKDB)SelectEntrustWithQid(qid string)*tbls.Entrust{
 
 func(this *TradeKDB)Cancel(entrust *tbls.Entrust){
 	entrust.Status=3
-	this.FuncTable("upd","request",[]tbls.Entrust{*entrust})
+	this.FuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
 }

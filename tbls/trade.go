@@ -92,7 +92,7 @@ func NewEntrust(sym string,accountname string,stockcode string,price float64,vol
 	entrust.Accountname = accountname
 	entrust.Askprice = price
 	entrust.Askvol = vol
-	entrust.Qid =strings.Replace(uuid.New(),"-","",-1)
+	entrust.Qid ="autoclose"+strings.Replace(uuid.New(),"-","",-1)
 	entrust.Status = 0
 	entrust.Time = time.Now()
 	entrust.Stockcode = stockcode
@@ -100,6 +100,18 @@ func NewEntrust(sym string,accountname string,stockcode string,price float64,vol
 
 }
 
+
+
+type AutoCloseRequest struct {
+	Sym string
+	Time time.Time
+	Username string
+	Accountname string
+	Stockcode string
+	Volume int32
+	Status string
+	Note string
+}
 
 
 
