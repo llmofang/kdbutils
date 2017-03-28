@@ -94,7 +94,7 @@ func (this *Kdb) GetCommandFromChannel() {
 		default:
 			if !Test {
 				logger.Debug("FuncTable ......:", func_table)
-				this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+				this.AsyncFuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
 			}
 		}
 	}
