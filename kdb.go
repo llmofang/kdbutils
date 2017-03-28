@@ -67,13 +67,14 @@ func (this *Kdb) DumpSubscriber() {
 
 func (this *Kdb) GetCommandFromChannel() {
 	var func_table comm.FuncTable
+	Test := false
 	for {
 		if this.closed{
 			return
 		}
 		func_table = <-this.InputChan
 		logger.Debug("Channel Market Length: %v", len(this.InputChan))
-		logger.Debug("Get new func_table", func_table)
+		logger.Debug("Get new command from channel, FuncTable:", func_table)
 		switch func_table.FuncName {
 		case "":
 			logger.Error("FuncTable's FuncName is empty, func_table: %v", func_table)
@@ -91,7 +92,10 @@ func (this *Kdb) GetCommandFromChannel() {
 				this.UnSubSym(sym)
 			}
 		default:
-			this.FuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+			if !Test {
+				logger.Debug("FuncTable ......:", func_table)
+				this.AsyncFuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+			}
 		}
 	}
 
