@@ -550,6 +550,14 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
 				values = append(values, col_data_k)
 			}
+			case int: {
+				var col_data = []int32{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, int32(data_value.Index(j).Field(i).Interface().(int)))
+				}
+				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			}
 			//byte
 			case uint8:
 				var col_data = []byte{}
