@@ -48,6 +48,7 @@ func(this *Kdb)Close()error {
 
 func(this *Kdb)CloseOutputChan(){
 	this.channelClosed=true
+	close(this.OutputChan)
 }
 
 
