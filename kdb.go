@@ -241,7 +241,12 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 		}
 		len := res.Len()
 		if len != 3 {
-			logger.Error("Message is not pub data, length: %i", len)
+			s := res.Data.(string)
+
+			if s=="\"heartbeat\""{
+				continue
+			}
+			logger.Error("Message is not pub data, length: %v data:%v", len,res)
 			continue
 		}
 

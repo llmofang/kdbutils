@@ -104,7 +104,7 @@ func NewEntrust(sym string,accountname string,stockcode string,price float64,vol
 	entrust.Accountname = accountname
 	entrust.Askprice = price
 	entrust.Askvol = vol
-	entrust.Qid ="autoclose"+strings.Replace(uuid.New(),"-","",-1)
+	entrust.Qid ="close"+strings.Replace(uuid.New(),"-","",-1)
 	entrust.Status = 0
 	entrust.Time = time.Now()
 	entrust.Stockcode = stockcode
