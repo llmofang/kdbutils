@@ -12,7 +12,7 @@ type TradeKDB struct {
 
 func NewTradeKDB(host string, port int)*TradeKDB{
 	tradeKDB:=TradeKDB{NewKdb(host,port),make(map[string]Factory_New)}
-	tradeKDB.TableStruct["response"]=func() interface{} {
+	tradeKDB.TableStruct["response1"]=func() interface{} {
 		return new(tbls.Entrust)
 	}
 	tradeKDB.TableStruct["request"]=func() interface{} {
@@ -27,7 +27,7 @@ func NewTradeKDB(host string, port int)*TradeKDB{
 
 func (this * TradeKDB)Trade(entrust *tbls.Entrust){
 
-	this.FuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
+	this.AsyncFuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
 }
 
 
@@ -37,19 +37,16 @@ func(this *TradeKDB)SelectEntrustWithQid(qid string)*tbls.Entrust{
 	if err!=nil{
 		fmt.Println(err)
 	}
-	if ret==nil{
-		return nil
-	}
 	entrusts=ret.([]tbls.Entrust)
-
 	if len(entrusts)==0{
 		return nil
 	}
+
 	return &entrusts[0]
 }
 
 
 func(this *TradeKDB)Cancel(entrust *tbls.Entrust){
 	entrust.Status=3
-	this.FuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
+	this.AsyncFuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
 }
