@@ -2,8 +2,8 @@ package tbls
 
 import (
 	"time"
-	"code.google.com/p/go-uuid/uuid"
-	"strings"
+//	"code.google.com/p/go-uuid/uuid"
+//	"strings"
 )
 
 /**
@@ -104,7 +104,7 @@ func NewEntrust(sym string,accountname string,stockcode string,price float64,vol
 	entrust.Accountname = accountname
 	entrust.Askprice = price
 	entrust.Askvol = vol
-	entrust.Qid =strings.Replace(uuid.New(),"-","",-1)
+	// entrust.Qid =strings.Replace(uuid.New(),"-","",-1)
 	entrust.Status = 0
 	entrust.Time = time.Now()
 	entrust.Stockcode = stockcode
