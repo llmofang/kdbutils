@@ -260,7 +260,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 		}
 
 		table_name := data_list[1].Data.(string)
-		logger.Finest("message's table_name: %s", table_name)
+		logger.Debug("message's table_name: %s", table_name)
 		var factory Factory_New
 		match := false
 		for tab, fn := range table2struct {
