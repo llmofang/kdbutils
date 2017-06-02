@@ -124,7 +124,6 @@ func (this *Kdb) IsConnected() bool {
 
 func (this *Kdb) Disconnect() error {
 	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
-	this.CloseOutputChan()
 	this.closed=true
 	err := this.Connection.Close()
 	if err == nil {

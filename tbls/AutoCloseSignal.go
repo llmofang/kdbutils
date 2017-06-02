@@ -1,9 +1,10 @@
 package tbls
 
+import "time"
 
 type AutoCloseSignal struct {
 	Sym        string
-	Time       int32
+	Time       time.Time
 	Name       string
 	Signaltype string
 	Signal     float64
