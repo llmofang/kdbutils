@@ -147,3 +147,13 @@ type UserStockQuota struct{
 	AmountSellReserved int32
 	Priority int32
 }
+
+type AccountQuota struct {
+	Sym                string
+	StockCode          string
+	AmountBuy          int32
+	AmountSell         int32
+	AmountBuyReserved  int32
+	AmountSellReserved int32
+	Priority           int32
+}
