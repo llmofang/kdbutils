@@ -25,8 +25,12 @@ func NewTradeKDB(host string, port int)*TradeKDB{
 
 
 	tradeKDB.TableStruct["AccountQuotaUpdate"]=func() interface{}{
-		return new(tbls.AccountQuota)
+		return new(tbls.AccountStockQuota)
 	}
+	tradeKDB.TableStruct["UserQuotaUpdate"]=func()interface{}{
+		return new(tbls.UserStockQuota)
+	}
+
 	return &tradeKDB
 }
 

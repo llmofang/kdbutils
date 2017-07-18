@@ -127,7 +127,7 @@ type AutoCloseRequest struct {
 
 
 
-type AccountQuota struct {
+type AccountStockQuota struct {
 	Sym                string
 	StockCode          string
 	AmountBuy          int32
@@ -135,4 +135,15 @@ type AccountQuota struct {
 	AmountBuyReserved  int32
 	AmountSellReserved int32
 	Priority           int32
+}
+
+
+type UserStockQuota struct{
+	Sym string
+	StockCode string
+	AmountBuy int32
+	AmountSell int32
+	AmountBuyReserved int32
+	AmountSellReserved int32
+	Priority int32
 }
