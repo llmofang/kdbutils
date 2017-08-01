@@ -22,6 +22,15 @@ func NewTradeKDB(host string, port int)*TradeKDB{
 	tradeKDB.TableStruct["Position1"]=func() interface{} {
 		return new(tbls.Position)
 	}
+
+
+	tradeKDB.TableStruct["AccountQuotaUpdate"]=func() interface{}{
+		return new(tbls.AccountStockQuota)
+	}
+	tradeKDB.TableStruct["UserQuotaUpdate"]=func()interface{}{
+		return new(tbls.UserStockQuota)
+	}
+
 	return &tradeKDB
 }
 
@@ -49,4 +58,26 @@ func(this *TradeKDB)SelectEntrustWithQid(qid string)*tbls.Entrust{
 func(this *TradeKDB)Cancel(entrust *tbls.Entrust){
 	entrust.Status=3
 	this.AsyncFuncTable("upd","requestxx",[]tbls.Entrust{*entrust})
+}
+
+
+func(this *TradeKDB)GetPositions(code string,users []string)[]*tbls.Position{
+	positions:=[]tbls.Position{}
+	ret,err:=this.QueryNoneKeyedTable("0!select from Position where stockcode=`"+code,&positions)
+	if err!=nil{
+		fmt.Println(err)
+	}
+	positions=ret.([]tbls.Position)
+	positionsWithUsers:=[]*tbls.Position{}
+	if users!=nil{
+		for _,position:=range positions{
+			for _,user:=range users{
+				if position.Sym==user{
+					positionsWithUsers=append(positionsWithUsers,&position)
+				}
+			}
+		}
+		return positionsWithUsers
+	}
+	return positionsWithUsers
 }

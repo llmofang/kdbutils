@@ -124,7 +124,6 @@ func (this *Kdb) IsConnected() bool {
 
 func (this *Kdb) Disconnect() error {
 	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
-	this.CloseOutputChan()
 	this.closed=true
 	err := this.Connection.Close()
 	if err == nil {
@@ -268,7 +267,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			continue
 		}
 
-		logger.Debug("message's table_name: %s", table_name)
+		//logger.Debug("message's table_name: %s", table_name)
 		var factory Factory_New
 		match := false
 		for tab, fn := range table2struct {
@@ -293,7 +292,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			continue
 		}
 		length := table_data.Data[0].Len()
-		logger.Finest("message's table_name: %s, length: %d", table_name, length)
+		//logger.Finest("message's table_name: %s, length: %d", table_name, length)
 		for i := 0; i < length; i++ {
 			row := factory()
 			test := table_data.Index(i)
@@ -302,7 +301,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 				fmt.Println("Failed to unmrshall dict ", err)
 				continue
 			}
-			logger.Finest("before send: %v", row)
+			//logger.Finest("before send: %v", row)
 			this.OutputChan <- row
 		}
 	}

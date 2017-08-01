@@ -2,6 +2,8 @@ package tbls
 
 import (
 	"time"
+	"financeCloud/cim.git/datacache/lrucache"
+	"unsafe"
 )
 
 type Market struct {
@@ -70,6 +72,7 @@ type Market struct {
 	NSyl1 int32
 	NSyl2 int32
 	NSD2 int32
+	lrucache.ILRUValue
 }
 
 type Market2 struct {
@@ -138,4 +141,9 @@ type Market2 struct {
 	NSyl1 int32
 	NSyl2 int32
 	NSD2 int32
+}
+
+func (this *Market) Size() int {
+	temp := (int)(unsafe.Sizeof(this))
+	return temp
 }
