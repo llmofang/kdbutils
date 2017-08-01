@@ -48,6 +48,7 @@ func(this *Kdb)Close()error {
 
 func(this *Kdb)CloseOutputChan(){
 	this.channelClosed=true
+	close(this.OutputChan)
 }
 
 
@@ -123,7 +124,6 @@ func (this *Kdb) IsConnected() bool {
 
 func (this *Kdb) Disconnect() error {
 	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
-	this.CloseOutputChan()
 	this.closed=true
 	err := this.Connection.Close()
 	if err == nil {
@@ -240,8 +240,14 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			return
 		}
 		len := res.Len()
+
 		if len != 3 {
-			logger.Error("Message is not pub data, length: %i", len)
+			s := res.Data.(string)
+
+			if s=="\"heartbeat\""{
+				continue
+			}
+			logger.Error("Message is not pub data, length: %v data:%v", len,res)
 			continue
 		}
 
@@ -255,7 +261,13 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 		}
 
 		table_name := data_list[1].Data.(string)
-		logger.Debug("message's table_name: %s", table_name)
+
+		if table_name == "HeartBeat" {
+			fmt.Print(".")
+			continue
+		}
+
+		//logger.Debug("message's table_name: %s", table_name)
 		var factory Factory_New
 		match := false
 		for tab, fn := range table2struct {
@@ -280,7 +292,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			continue
 		}
 		length := table_data.Data[0].Len()
-		logger.Debug("message's table_name: %s, length: %d", table_name, length)
+		//logger.Finest("message's table_name: %s, length: %d", table_name, length)
 		for i := 0; i < length; i++ {
 			row := factory()
 			test := table_data.Index(i)
@@ -289,7 +301,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 				fmt.Println("Failed to unmrshall dict ", err)
 				continue
 			}
-			logger.Debug("before send: %v", row)
+			//logger.Finest("before send: %v", row)
 			this.OutputChan <- row
 		}
 	}
@@ -338,6 +350,7 @@ func (this *Kdb) AsyncCall(table string, query string) (error) {
 	// (neg .z.w)(`upd;t;x)
 	async_call := "(neg .z.w)(`upd;`" + table + ";" + query + ")"
 	logger.Debug("AsyncCall: %v", async_call)
+
 	this.Lock()
 	err := this.Connection.AsyncCall(async_call);
 	this.Unlock()
@@ -546,6 +559,14 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				var col_data = []int64{}
 				for j := 0; j < data_value.Len(); j++ {
 					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(int64))
+				}
+				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
+				values = append(values, col_data_k)
+			}
+			case int: {
+				var col_data = []int32{}
+				for j := 0; j < data_value.Len(); j++ {
+					col_data = append(col_data, int32(data_value.Index(j).Field(i).Interface().(int)))
 				}
 				col_data_k := &kdb.K{kdb.KI, kdb.NONE, col_data}
 				values = append(values, col_data_k)

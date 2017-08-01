@@ -114,5 +114,56 @@ func NewEntrust(sym string,accountname string,stockcode string,price float64,vol
 
 
 
+type AutoCloseRequest struct {
+	Sym string
+	Time time.Time
+	Username string
+	Accountname string
+	Stockcode string
+	Volume int32
+	Status string
+	Note string
+}
 
 
+
+type AccountStockQuota struct {
+	Sym                string
+	StockCode          string
+	AmountBuy          int32
+	AmountSell         int32
+	AmountBuyReserved  int32
+	AmountSellReserved int32
+	Priority           int32
+}
+
+
+type UserStockQuota struct{
+	Sym string
+	StockCode string
+	AmountBuy int32
+	AmountSell int32
+	AmountBuyReserved int32
+	AmountSellReserved int32
+	Priority int32
+}
+
+type AccountQuota struct {
+	Sym                string
+	StockCode          string
+	AmountBuy          int32
+	AmountSell         int32
+	AmountBuyReserved  int32
+	AmountSellReserved int32
+	Priority           int32
+}
+
+type UserQuota struct{
+	Sym string
+	StockCode string
+	AmountBuy int32
+	AmountSell int32
+	AmountBuyReserved int32
+	AmountSellReserved int32
+	Priority int32
+}
