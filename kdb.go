@@ -241,6 +241,7 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 			return
 		}
 		len := res.Len()
+
 		if len != 3 {
 			s := res.Data.(string)
 
@@ -261,6 +262,12 @@ func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 		}
 
 		table_name := data_list[1].Data.(string)
+
+		if table_name == "HeartBeat" {
+			fmt.Print(".")
+			continue
+		}
+
 		logger.Debug("message's table_name: %s", table_name)
 		var factory Factory_New
 		match := false
@@ -344,6 +351,7 @@ func (this *Kdb) AsyncCall(table string, query string) (error) {
 	// (neg .z.w)(`upd;t;x)
 	async_call := "(neg .z.w)(`upd;`" + table + ";" + query + ")"
 	logger.Debug("AsyncCall: %v", async_call)
+
 	this.Lock()
 	err := this.Connection.AsyncCall(async_call);
 	this.Unlock()
