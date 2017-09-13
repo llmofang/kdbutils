@@ -22,7 +22,7 @@ func NewMarketKDB(host string, port int)*MarketKDB{
 	return &this
 }
 
-func (this *MarketKDB)GetLastTickData(stockcode string)*tbls.Market{
+func (this *MarketKDB)GetLastTickData(stockcode string)*tbls.Market {
 	markets := []tbls.Market{}
 	ret,err:=this.QueryNoneKeyedTable("0! select [-1] from Market where sym=`"+stockcode,&markets)
 	markets=ret.([]tbls.Market)

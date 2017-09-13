@@ -18,3 +18,4 @@ type Transaction struct {
 	NAskOrder int32
 	NBidOrder int32
 }
+

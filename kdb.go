@@ -529,7 +529,6 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			tp:=data_value.Index(0).Field(i).Interface()
 			//fmt.Println("kind",data_value.Index(0).Field(i).Kind())
 			//fmt.Println("type",data_value.Index(0).Field(i).Type())
-			// logger.Debug(kind)
 			switch tp.(type){
 			case int32:{
 				var col_data = []int32{}
@@ -567,7 +566,7 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 			case uint8:
 				var col_data = []byte{}
 				for j := 0; j < data_value.Len(); j++ {
-					col_data = append(col_data, data_value.Index(j).Field(i).Interface().(byte))
+					col_data = append(col_data,data_value.Index(j).Field(i).Interface().(byte))
 
 				}
 				col_data_k := &kdb.K{kdb.KC, kdb.NONE, string(col_data)}
@@ -658,8 +657,8 @@ func Slice2KTable(data interface{}) (kdb.Table, error) {
 				values = append(values, col_data_k)
 
 			default:
-				logger.Error("Unkonwn struct,data: %V name: %v type: %v",data_value.Index(0), data_value.Index(0).Field(i),data_value.Index(0).Field(i).Type())
-				return table, errors.New("Unkown struct")
+				logger.Error("Unkonwn struct,data: %V name: %v type: %v ",data_value.Index(0), data_value.Index(0).Field(i),data_value.Index(0).Field(i).Type())
+				//return table, errors.New("Unkown struct")
 
 			}
 
