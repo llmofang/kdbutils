@@ -408,13 +408,14 @@ func (this *Kdb) AsyncFuncTable(func_name string, table_name string, data interf
 func (this *Kdb) FuncTable(func_name string, table_name string, data interface{}) (interface{}, error) {
 	if table, err := Slice2KTable(data); err == nil {
 		//logger.Debug("table: %v", table)
+	//	k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
 		k_tab := &kdb.K{kdb.XT, kdb.NONE, table}
-
 		this.Lock()
-		ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab);
+		ret, err := this.Connection.Call(func_name, &kdb.K{-kdb.KS, kdb.NONE, table_name}, k_tab)
 		this.Unlock()
 
 		if err != nil {
+			fmt.Println(ret,err)
 			logger.Error("Execute kdb function failed, func_name: %v, table_name: %v, error: %v, return: %v",
 				func_name, table_name, err, ret)
 			return nil, errors.New("Execute kdb function failed")

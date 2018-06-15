@@ -2,7 +2,6 @@ package tbls
 
 import (
 	"time"
-	"financeCloud/cim.git/datacache/lrucache"
 	"unsafe"
 )
 
@@ -72,7 +71,6 @@ type Market struct {
 	NSyl1 int32
 	NSyl2 int32
 	NSD2 int32
-	lrucache.ILRUValue
 }
 
 type Market2 struct {
