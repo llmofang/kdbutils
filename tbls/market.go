@@ -217,9 +217,9 @@ type Market3 struct {
 
 type Kline struct{
 	Sym string
-	Time int64
-	Open int64
-	High int64
-	Low int64
-	Close int64
+	Time int32
+	Open int32
+	High int32
+	Low int32
+	Close int32
 }
