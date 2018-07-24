@@ -19,6 +19,10 @@ func NewMarketKDB(host string, port int)*MarketKDB{
 		return new(tbls.Transaction)
 	}
 
+	this.TableStruct["Kline"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+
 	return &this
 }
 

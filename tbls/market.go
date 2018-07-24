@@ -213,3 +213,13 @@ type Market3 struct {
 	NSyl2 int32
 	NSD2 int32
 }
+
+
+type Kline struct{
+	Sym string
+	Time int64
+	Open int64
+	High int64
+	Low int64
+	Close int64
+}
