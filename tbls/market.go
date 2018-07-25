@@ -216,10 +216,14 @@ type Market3 struct {
 
 
 type Kline struct{
-	Sym string
 	Time time.Time
+	Sym string
+	DataTime time.Time
 	Open int64
 	High int64
 	Low int64
 	Close int64
+	NumTrades int64
+	TotalVolume int64
+	TotalValue int64
 }
