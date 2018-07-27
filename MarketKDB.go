@@ -22,6 +22,24 @@ func NewMarketKDB(host string, port int)*MarketKDB{
 	this.TableStruct["Kline"]= func() interface{} {
 		return new(tbls.Kline)
 	}
+	this.TableStruct["Kline1m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline5m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline15m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline30m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline60m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline1d"]= func() interface{} {
+		return new(tbls.Kline)
+	}
 
 	return &this
 }
