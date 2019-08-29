@@ -216,9 +216,9 @@ type Market3 struct {
 
 
 type Kline struct{
-	Sym string
 	Time time.Duration
-	Date int32
+	Sym string
+	NDate int32
 	NTime int32
 	Open int64
 	High int64
