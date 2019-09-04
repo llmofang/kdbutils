@@ -25,8 +25,9 @@ type Index struct{
 	NOpenIndex int32
 	NHighIndex int32
 	NLowIndex int32
-	ITotalVolume int32
-	ITurnover int32
+	NLastIndex int32
+	ITotalVolume int64
+	ITurnover int64
 	NPreCLoseIndex int32
 
 }
