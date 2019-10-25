@@ -199,8 +199,8 @@ type Market3 struct {
 	NBidVol9 int32
 	NBidVol10 int32
 	NNumTrades int32
-	IVolume int32
-	ITurnover int32
+	IVolume int64
+	ITurnover int64
 	NTotalBidVol int32
 	NTotalAskVol int32
 	NWeightedAvgBidPrice int32
