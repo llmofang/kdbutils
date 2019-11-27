@@ -24,8 +24,7 @@ type Kdb struct {
 	sub_tables []string
 	OutputChan chan interface{}
 	InputChan  chan comm.FuncTable
-	channelClosed bool
-	closed bool
+	exitCh chan int
 	sync.RWMutex
 
 
@@ -34,24 +33,43 @@ type Kdb struct {
 func NewKdb(host string, port int) *Kdb {
 	kdb := &Kdb{Host:host, Port: port, Connection:nil,
 		subscriber: comm.Subscriber{Set:make(map[string]int, 0)},
-		sub_tables:make([]string, 0), OutputChan:make(chan interface{}, 10000), InputChan:make(chan comm.FuncTable, 10000)}
+		sub_tables:make([]string, 0), OutputChan:make(chan interface{}, 10000), InputChan:make(chan comm.FuncTable, 10000),exitCh:make(chan int)}
 
 
 	return kdb
 }
 
+func(this *Kdb)Heartbeat(){
+	for {
+		select {
+		case <-time.After(10*time.Minute):
+		//case <-time.After(500*time.Millisecond):
+			err:=this.Connection.AsyncCall("neg[.z.w] .j.j (`heartbeat)")
+			if err!=nil{
+				logger.Error("send heartbeat error %v",err)
+			}
+		case <-this.exitCh:
+			return
+		}
+	}
+}
 
 func(this *Kdb)Close()error {
-
+	logger.Debug("close kdb connection , host: %v, port:%v", this.Host, this.Port)
+	if this.OutputChan!=nil{
+		close(this.OutputChan)
+		this.OutputChan=nil
+	}
+	if this.InputChan!=nil{
+		close(this.InputChan)
+		this.InputChan=nil
+	}
+	if this.exitCh!=nil{
+		close(this.exitCh)
+		this.exitCh=nil
+	}
 	return this.Connection.Close()
 }
-
-func(this *Kdb)CloseOutputChan(){
-	this.channelClosed=true
-	close(this.OutputChan)
-}
-
-
 
 func (this *Kdb) Start(table2struct map[string]Factory_New) {
 	if !this.IsConnected() {
@@ -70,33 +88,36 @@ func (this *Kdb) GetCommandFromChannel() {
 	var func_table comm.FuncTable
 	Test := false
 	for {
-		if this.closed{
+
+		select{
+		case func_table = <-this.InputChan:
+			logger.Debug("Channel Market Length: %v", len(this.InputChan))
+			logger.Debug("Get new command from channel, FuncTable:", func_table)
+			switch func_table.FuncName {
+			case "":
+				logger.Error("FuncTable's FuncName is empty, func_table: %v", func_table)
+			case comm.SubFunc:
+				if func_table.TableName == "" {
+					sym := func_table.Data.([]string)
+					this.SubSym(sym)
+				} else {
+					sym := func_table.Data.([]string)
+					this.Subscribe(func_table.TableName, sym)
+				}
+			case comm.UnSubFunc:
+				if func_table.TableName == "" {
+					sym := func_table.Data.([]string)
+					this.UnSubSym(sym)
+				}
+			default:
+				if !Test {
+					logger.Debug("FuncTable ......:", func_table)
+					this.AsyncFuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
+				}
+			}
+		case <-this.exitCh:
+			logger.Debug("kdb command be closed...")
 			return
-		}
-		func_table = <-this.InputChan
-		logger.Debug("Channel Market Length: %v", len(this.InputChan))
-		logger.Debug("Get new command from channel, FuncTable:", func_table)
-		switch func_table.FuncName {
-		case "":
-			logger.Error("FuncTable's FuncName is empty, func_table: %v", func_table)
-		case comm.SubFunc:
-			if func_table.TableName == "" {
-				sym := func_table.Data.([]string)
-				this.SubSym(sym)
-			} else {
-				sym := func_table.Data.([]string)
-				this.Subscribe(func_table.TableName, sym)
-			}
-		case comm.UnSubFunc:
-			if func_table.TableName == "" {
-				sym := func_table.Data.([]string)
-				this.UnSubSym(sym)
-			}
-		default:
-			if !Test {
-				logger.Debug("FuncTable ......:", func_table)
-				this.AsyncFuncTable(func_table.FuncName, func_table.TableName, func_table.Data)
-			}
 		}
 	}
 
@@ -120,18 +141,6 @@ func (this *Kdb) IsConnected() bool {
 	} else {
 		return false
 	}
-}
-
-func (this *Kdb) Disconnect() error {
-	logger.Info("disconnecting to kdb, host: %v, port:%v", this.Host, this.Port)
-	this.closed=true
-	err := this.Connection.Close()
-	if err == nil {
-		logger.Info("disconnected to kdb successful")
-	} else {
-		logger.Error("disconnected to kdb error, err: %s", err.Error())
-	}
-	return err
 }
 
 func (this *Kdb) Subscribe(table string, sym []string) {
@@ -228,15 +237,12 @@ func (this *Kdb) SubTable(table string) {
 
 func (this *Kdb) SubscribedData2Channel(table2struct map[string]Factory_New) {
 	for {
-		if this.channelClosed||this.closed{
-			return
-		}
-
-
 		// ignore type print output
 		res, _, err := this.Connection.ReadMessage()
+		//fmt.Println("recieve res %v %v",res,err)
 		if err != nil {
 			logger.Error("Error on processing KDB message, error: ", err.Error())
+			this.Close()
 			return
 		}
 		len := res.Len()
