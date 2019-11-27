@@ -82,10 +82,10 @@ func (this *Market) Size() int {
 
 
 type Kline struct{
-	Sym string
 	Time time.Duration
-	NDate int64
-	NTime int64
+	Sym string
+	NDate int32
+	NTime int32
 	Open int64
 	High int64
 	Low int64

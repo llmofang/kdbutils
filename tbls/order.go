@@ -29,5 +29,4 @@ type Index struct{
 	ITotalVolume int64
 	ITurnover int64
 	NPreCLoseIndex int32
-
 }

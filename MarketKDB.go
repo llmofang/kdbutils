@@ -43,7 +43,28 @@ func NewMarketKDB2(host string, port int)*MarketKDB{
 	this.TableStruct["Index"]=func() interface{}{
 		return new(tbls.Index)
 	}
-	//go this.Heartbeat()
+
+	this.TableStruct["Kline"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline1m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline5m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline15m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline30m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline60m"]= func() interface{} {
+		return new(tbls.Kline)
+	}
+	this.TableStruct["Kline1d"]= func() interface{} {
+		return new(tbls.Kline)
+	}
 	return &this
 }
 
@@ -86,8 +107,6 @@ func(this *MarketKDB)GetLastTickDatas(codes []string)[]tbls.Market{
 }
 
 
-
-
 func (this *MarketKDB)GetAllTickData()map[string]tbls.Market {
 	markets := []tbls.Market{}
 	ret,err:=this.QueryNoneKeyedTable("0! select from Market ",&markets)
@@ -101,3 +120,4 @@ func (this *MarketKDB)GetAllTickData()map[string]tbls.Market {
 	}
 	return marketMap
 }
+
